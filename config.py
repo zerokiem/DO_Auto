@@ -34,6 +34,16 @@ AUTH_STATE = Path("playwright/.auth/state.json")
 # quay ve duong dan Windows cu, nen file nay dung duoc o ca 2 moi truong.
 DOWNLOAD_BASE_DIR = Path(os.environ.get("DOFFICE_DATA_DIR") or r"D:\OneDrive - NPT\9. Jobs\Van_ban")
 
+# Duong dan HIEN THI trong Excel/web (cot "Thu muc luu" va hyperlink ten file) de
+# nguoi dung bam MO DUOC file tren may Windows cua minh. Ly do: khi chay trong
+# Docker tren NAS, file that nam o /data BEN TRONG container - duong dan do vo
+# nghia voi may Windows. Tren cac may cua ban, thu muc du lieu tren NAS duoc map
+# vao o S:, nen phai ghi vao Excel duong dan kieu "S:\..." thi click moi mo ra.
+# Uu tien bien moi truong DOFFICE_DISPLAY_DIR (dat trong docker-compose.yml). Khi
+# chay TRUC TIEP tren Windows (khong dat bien) thi mac dinh = DOWNLOAD_BASE_DIR
+# nen khong thay doi gi so voi truoc.
+DISPLAY_BASE_DIR = os.environ.get("DOFFICE_DISPLAY_DIR") or str(DOWNLOAD_BASE_DIR)
+
 # 1 file Excel duy nhat, gom du lieu cua ca 3 tac vu, moi tac vu 1 sheet rieng
 # (xem sheet_name trong tung TaskConfig ben duoi).
 EXCEL_FILE = DOWNLOAD_BASE_DIR / "Tong_hop_DOffice.xlsx"

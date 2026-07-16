@@ -195,10 +195,36 @@ def get_next_excel_stt(excel_file: Path, sheet_name: str) -> int:
 
 
 def file_uri_from_path(path_text: str) -> str:
+    """Tao URI file:/// tu duong dan (Windows hoac POSIX) de nhung vao Excel.
+    KHONG dung Path.resolve(): khi chay trong container (Linux) ma duong dan la
+    kieu Windows (vd 'S:\\...') thi resolve() se hieu nham thanh duong dan tuong
+    doi va noi them cwd vao -> hong link. O day chi chuyen '\\' -> '/', escape
+    dau cach, roi them tien to file:// phu hop."""
+    normalized = path_text.replace("\\", "/").replace(" ", "%20")
+    if normalized.startswith("/"):
+        return "file://" + normalized  # POSIX tuyet doi: /data/... -> file:///data/...
+    return "file:///" + normalized  # Windows co o dia: S:/... -> file:///S:/...
+
+
+def to_display_folder(actual_folder, download_base, display_base) -> str:
+    """Doi duong dan THUC TE (noi file that su duoc luu, vd '/data/VB_Chu_tri_da_XL'
+    trong container) sang duong dan HIEN THI de nguoi dung bam mo tren Windows
+    (vd 'S:\\Working\\Van_ban\\VB_Chu_tri_da_XL').
+
+    Neu display_base trung download_base (dang chay truc tiep tren Windows, khong
+    dat DOFFICE_DISPLAY_DIR) thi tra ve nguyen ban - khong doi gi."""
+    actual = Path(actual_folder)
+    base = Path(download_base)
+    display_base = str(display_base).rstrip("/\\")
+    if str(base) == display_base:
+        return str(actual)
     try:
-        return Path(path_text).resolve().as_uri()
-    except Exception:
-        return "file:///" + path_text.replace("\\", "/").replace(" ", "%20")
+        rel = actual.relative_to(base)
+    except ValueError:
+        return str(actual)  # khong nam duoi base -> khong biet map, giu nguyen
+    if str(rel) in (".", ""):
+        return display_base
+    return display_base + "\\" + str(rel).replace("/", "\\")
 
 
 def append_excel_log(excel_file: Path, sheet_name: str, title_text: str, data: Dict[str, str]) -> None:
@@ -235,7 +261,11 @@ def append_excel_log(excel_file: Path, sheet_name: str, title_text: str, data: D
     saved_name = data.get("ten_file_luu", "")
     if saved_folder and saved_name:
         file_cell = ws.cell(row=ws.max_row, column=12)
-        saved_path = str(Path(saved_folder) / saved_name)
+        # Noi thu muc + ten file bang dung kieu separator cua thu muc (Windows
+        # '\\' hay POSIX '/') - KHONG dung Path() vi tren Linux no se hieu sai
+        # duong dan Windows 'S:\\...' thanh 1 thanh phan duy nhat.
+        sep = "\\" if ("\\" in saved_folder or (len(saved_folder) >= 2 and saved_folder[1] == ":")) else "/"
+        saved_path = saved_folder.rstrip("/\\") + sep + saved_name
         file_cell.hyperlink = file_uri_from_path(saved_path)
         file_cell.style = "Hyperlink"
         file_cell.comment = None

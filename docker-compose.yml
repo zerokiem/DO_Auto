@@ -13,6 +13,10 @@ services:
       - "8877:8877"
     environment:
       - DOFFICE_DATA_DIR=/data
+      # Duong dan hien thi trong Excel/web de bam mo file tren may Windows. Tren
+      # cac may cua ban, thu muc du lieu NAS (/volume1/homes/binhnx/Working/Van_ban)
+      # duoc map vao o S: -> S:\Working\Van_ban. Sua lai neu may ban map o dia khac.
+      - 'DOFFICE_DISPLAY_DIR=S:\Working\Van_ban'
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       # Code (chua config.py, do_auto/, webapp/, playwright/.auth/state.json ...)
