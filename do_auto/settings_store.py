@@ -35,6 +35,7 @@ TASK_FIELD_RENDER = {
 
 # Cac bien chung duoc phep sua tu web: {ten_bien_trong_config.py: ham_render}.
 COMMON_FIELD_RENDER = {
+    "DOFFICE_URL": lambda v: json.dumps(str(v), ensure_ascii=False),
     "STOP_WHEN_DUPLICATE_FOUND": lambda v: "True" if v else "False",
     "DUPLICATE_CHECK_MODE": lambda v: json.dumps(str(v), ensure_ascii=False),
     "SLOW_MO_MS": lambda v: str(int(v)),

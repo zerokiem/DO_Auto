@@ -6,30 +6,14 @@
 {% if not auth.exists %}
 <div class="banner banner-danger">
   <strong>Chưa có phiên đăng nhập.</strong>
-  Bấm "Đăng nhập lại" bên dưới, hoặc chạy <code>python login_save_state.py</code> trên máy này.
+  Vào <a href="{{ url_for('settings_page') }}#login">Cài đặt &rsaquo; Phiên đăng nhập DOffice</a> để đăng nhập lại, hoặc chạy <code>python login_save_state.py</code> trên máy này.
 </div>
 {% elif auth.age_days is not none and auth.age_days > 7 %}
 <div class="banner banner-warning">
   <strong>Phiên đăng nhập đã lưu {{ auth.age_days }} ngày trước.</strong>
-  Nếu tác vụ bị đưa về màn hình đăng nhập, bấm "Đăng nhập lại" bên dưới.
+  Nếu tác vụ bị đưa về màn hình đăng nhập, vào <a href="{{ url_for('settings_page') }}#login">Cài đặt &rsaquo; Phiên đăng nhập DOffice</a> để đăng nhập lại.
 </div>
 {% endif %}
-
-<section class="panel" id="login-panel">
-  <div class="panel-head panel-head-row">
-    <div>
-      <h2>Phiên đăng nhập DOffice</h2>
-      <p>Dùng khi phiên hết hạn hoặc vừa đổi mật khẩu. Cửa sổ Chromium sẽ mở ngay trên máy đang chạy server này.</p>
-    </div>
-    <button id="login-start-btn" class="btn btn-secondary" {{ 'disabled' if login_status.is_active else '' }}>
-      Đăng nhập lại
-    </button>
-  </div>
-  <div id="login-status-box" class="login-status" {{ '' if login_status.is_active else 'hidden' }}>
-    <p id="login-status-message">{{ login_status.message }}</p>
-    <button id="login-confirm-btn" class="btn btn-primary">Tôi đã đăng nhập xong, lưu phiên</button>
-  </div>
-</section>
 
 <section class="panel">
   <div class="panel-head">
@@ -96,7 +80,6 @@
 {% block scripts %}
 <script>
   window.__INITIAL_STATUS__ = {{ status | tojson }};
-  window.__INITIAL_LOGIN_STATUS__ = {{ login_status | tojson }};
 </script>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}

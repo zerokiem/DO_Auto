@@ -234,10 +234,13 @@ def excel_download():
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
     if request.method == "POST":
+        doffice_url = request.form.get("doffice_url", "").strip()
         common_updates = {
             "STOP_WHEN_DUPLICATE_FOUND": request.form.get("stop_when_duplicate_found") == "on",
             "DUPLICATE_CHECK_MODE": request.form.get("duplicate_check_mode", base_config.DUPLICATE_CHECK_MODE),
         }
+        if doffice_url:
+            common_updates["DOFFICE_URL"] = doffice_url
         try:
             common_updates["SLOW_MO_MS"] = int(request.form.get("slow_mo_ms", base_config.SLOW_MO_MS))
         except (TypeError, ValueError):
@@ -274,13 +277,22 @@ def settings_page():
     effective_cfg = settings_store.build_effective_config(base_config)
     tasks = _ordered_tasks(effective_cfg)
     common = {
+        "DOFFICE_URL": effective_cfg.DOFFICE_URL,
         "STOP_WHEN_DUPLICATE_FOUND": effective_cfg.STOP_WHEN_DUPLICATE_FOUND,
         "DUPLICATE_CHECK_MODE": effective_cfg.DUPLICATE_CHECK_MODE,
         "SLOW_MO_MS": effective_cfg.SLOW_MO_MS,
     }
     saved = request.args.get("saved") == "1"
     error = request.args.get("error")
-    return render_template("settings.html", tasks=tasks, common=common, saved=saved, error=error)
+    return render_template(
+        "settings.html",
+        tasks=tasks,
+        common=common,
+        saved=saved,
+        error=error,
+        auth=_auth_state_info(effective_cfg),
+        login_status=login_manager.status(),
+    )
 
 
 @app.route("/scheduler", methods=["GET", "POST"])
