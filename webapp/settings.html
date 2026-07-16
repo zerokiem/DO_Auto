@@ -15,6 +15,37 @@
   {% endif %}
 
   <form method="post" class="settings-form">
+    <h2 class="section-title" id="login">Phiên đăng nhập DOffice</h2>
+
+    {% if not auth.exists %}
+    <div class="banner banner-danger">Chưa có phiên đăng nhập.</div>
+    {% elif auth.age_days is not none and auth.age_days > 7 %}
+    <div class="banner banner-warning">Phiên đăng nhập đã lưu {{ auth.age_days }} ngày trước &ndash; nếu tác vụ bị đưa về màn hình đăng nhập, đăng nhập lại bên dưới.</div>
+    {% else %}
+    <div class="banner banner-success">Phiên đăng nhập còn dùng được (lưu {{ auth.age_days }} ngày trước).</div>
+    {% endif %}
+
+    <div class="field-row">
+      <label for="doffice_url">Địa chỉ trang DOffice</label>
+      <input type="text" name="doffice_url" id="doffice_url" value="{{ common.DOFFICE_URL }}" placeholder="https://doffice.npt.com.vn/">
+      <p class="field-hint">Trang đích mà mọi tác vụ và nút "Đăng nhập lại" bên dưới sẽ mở tới. Để trống sẽ giữ nguyên giá trị hiện tại.</p>
+    </div>
+
+    <div class="field-row">
+      <div class="panel-head-row">
+        <p class="field-hint" style="margin: 0;">Dùng khi phiên hết hạn hoặc vừa đổi mật khẩu. Cửa sổ Chromium sẽ mở ngay trên máy đang chạy server này.</p>
+        <button type="button" id="login-start-btn" class="btn btn-secondary" {{ 'disabled' if login_status.is_active else '' }}>
+          Đăng nhập lại
+        </button>
+      </div>
+      <div id="login-status-box" class="login-status" {{ '' if login_status.is_active else 'hidden' }}>
+        <p id="login-status-message">{{ login_status.message }}</p>
+        <button type="button" id="login-confirm-btn" class="btn btn-primary">Tôi đã đăng nhập xong, lưu phiên</button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
     <h2 class="section-title">Chung</h2>
     <div class="field-row">
       <label class="switch">
@@ -78,4 +109,11 @@
     <button type="submit" class="btn btn-primary">Lưu cài đặt</button>
   </form>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.__INITIAL_LOGIN_STATUS__ = {{ login_status | tojson }};
+</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}
