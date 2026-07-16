@@ -44,6 +44,13 @@ DOWNLOAD_BASE_DIR = Path(os.environ.get("DOFFICE_DATA_DIR") or r"D:\OneDrive - N
 # nen khong thay doi gi so voi truoc.
 DISPLAY_BASE_DIR = os.environ.get("DOFFICE_DISPLAY_DIR") or str(DOWNLOAD_BASE_DIR)
 
+# Neu dat (kieu URL http...), HYPERLINK cot "Ten file luu" trong Excel se tro toi
+# NAS qua web (vd http://100.100.1.254:8877/vb) thay vi link file:// tren o S:.
+# Loi ich: bam MO DUOC tren DIEN THOAI (co Tailscale) va moi thiet bi trong mang,
+# khong phu thuoc o dia map S:. Cot "Thu muc luu" van hien duong dan S: cho de tra
+# cuu tren may tinh. De trong "" thi giu link file:// nhu truoc.
+DISPLAY_BASE_URL = os.environ.get("DOFFICE_DISPLAY_URL") or ""
+
 # 1 file Excel duy nhat, gom du lieu cua ca 3 tac vu, moi tac vu 1 sheet rieng
 # (xem sheet_name trong tung TaskConfig ben duoi).
 EXCEL_FILE = DOWNLOAD_BASE_DIR / "Tong_hop_DOffice.xlsx"

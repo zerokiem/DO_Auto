@@ -46,17 +46,19 @@ def _auth_state_info(cfg) -> dict:
     return {"exists": True, "age_days": round(age_days, 1)}
 
 
-def _read_sheet_preview(excel_file: Path, sheet_name: str, limit: int = 300):
+def _read_sheet_preview(excel_file: Path, sheet_name: str, limit=300):
+    """Doc sheet, tra ve (headers, rows_moi_nhat_len_tren, tong_so_dong).
+    limit=None nghia la lay tat ca."""
     from openpyxl import load_workbook
 
     excel_file = Path(excel_file)
     if not excel_file.exists():
-        return excel_log.HEADERS, []
+        return excel_log.HEADERS, [], 0
 
     wb = load_workbook(excel_file, read_only=True, data_only=True)
     if sheet_name not in wb.sheetnames:
         wb.close()
-        return excel_log.HEADERS, []
+        return excel_log.HEADERS, [], 0
     ws = wb[sheet_name]
 
     all_rows = []
@@ -66,9 +68,11 @@ def _read_sheet_preview(excel_file: Path, sheet_name: str, limit: int = 300):
         all_rows.append(row)
     wb.close()
 
-    tail = all_rows[-limit:]
+    total = len(all_rows)
+    tail = all_rows if limit is None else all_rows[-limit:]
+    tail = list(tail)
     tail.reverse()  # moi nhat len tren
-    return excel_log.HEADERS, tail
+    return excel_log.HEADERS, tail, total
 
 
 @app.route("/")
@@ -217,10 +221,23 @@ def excel_page():
     if not sheet or sheet not in sheet_names:
         sheet = sheet_names[0] if sheet_names else None
 
-    columns, rows, error = [], [], None
+    # So dong hien thi: tham so ?limit= (so nguyen hoac "all"). Mac dinh 300.
+    limit_options = [50, 100, 200, 300, 500, 1000]
+    limit_arg = (request.args.get("limit") or "300").strip().lower()
+    if limit_arg in ("all", "0", "tatca", "tat_ca"):
+        limit_arg = "all"
+        limit = None
+    else:
+        try:
+            limit = max(1, int(limit_arg))
+            limit_arg = str(limit)
+        except ValueError:
+            limit, limit_arg = 300, "300"
+
+    columns, rows, error, total = [], [], None, 0
     if sheet:
         try:
-            columns, rows = _read_sheet_preview(effective_cfg.EXCEL_FILE, sheet, limit=300)
+            columns, rows, total = _read_sheet_preview(effective_cfg.EXCEL_FILE, sheet, limit=limit)
         except Exception as e:
             error = str(e)
 
@@ -233,8 +250,26 @@ def excel_page():
         error=error,
         excel_file=str(effective_cfg.EXCEL_FILE),
         row_count=len(rows),
+        total_count=total,
+        limit_options=limit_options,
+        current_limit=limit_arg,
         column_widths=excel_log.COLUMN_WIDTHS,
     )
+
+
+@app.get("/vb/<path:relpath>")
+def serve_vb(relpath):
+    """Phuc vu file PDF trong thu muc du lieu (DOWNLOAD_BASE_DIR = /data) qua web,
+    de hyperlink trong Excel mo duoc tren dien thoai/Tailscale. Chi cho phep file
+    NAM TRONG thu muc du lieu (chan '../' thoat ra ngoai)."""
+    effective_cfg = settings_store.build_effective_config(base_config)
+    base = Path(effective_cfg.DOWNLOAD_BASE_DIR).resolve()
+    target = (base / relpath).resolve()
+    if base != target and base not in target.parents:
+        abort(403)
+    if not target.exists() or not target.is_file():
+        abort(404)
+    return send_file(target)
 
 
 @app.get("/excel/download")

@@ -23,8 +23,17 @@
   <div class="empty-state">Sheet "{{ active_sheet }}" chưa có dữ liệu. Chạy tác vụ tương ứng để bắt đầu ghi dữ liệu.</div>
   {% else %}
   <input type="text" id="excel-search" class="search-box" placeholder="Lọc theo Số VB, trích yếu, nơi phát hành...">
-  <p class="hint">Hiện {{ row_count }} dòng gần nhất (mới nhất ở trên). Tải file Excel để xem đầy đủ.</p>
-  <div class="table-wrap">
+  <div class="excel-toolbar">
+    <label for="row-limit">Hiện số dòng gần nhất:</label>
+    <select id="row-limit" class="limit-select">
+      {% for opt in limit_options %}
+      <option value="{{ opt }}" {{ 'selected' if current_limit == opt|string else '' }}>{{ opt }}</option>
+      {% endfor %}
+      <option value="all" {{ 'selected' if current_limit == 'all' else '' }}>Tất cả</option>
+    </select>
+    <span class="hint" style="margin:0">Đang hiện <b>{{ row_count }}</b> / tổng <b>{{ total_count }}</b> dòng (mới nhất ở trên).</span>
+  </div>
+  <div class="table-wrap excel-scroll">
     <table class="data-table excel-table" id="excel-table">
       <colgroup>
         {% for col in columns %}
@@ -55,6 +64,17 @@
 
 {% block scripts %}
 <script>
+  const limitSelect = document.getElementById('row-limit');
+  if (limitSelect) {
+    limitSelect.addEventListener('change', () => {
+      const sheet = {{ active_sheet|tojson }};
+      const params = new URLSearchParams();
+      if (sheet) params.set('sheet', sheet);
+      params.set('limit', limitSelect.value);
+      window.location.href = '?' + params.toString();
+    });
+  }
+
   const searchBox = document.getElementById('excel-search');
   if (searchBox) {
     searchBox.addEventListener('input', () => {

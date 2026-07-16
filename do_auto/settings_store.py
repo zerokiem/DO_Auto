@@ -72,6 +72,7 @@ _DEFAULTS: Dict[str, Any] = {
     "TELEGRAM_CHAT_ID": "",
     "TELEGRAM_NOTIFY_ONLY_IF_NEW": False,
     "DISPLAY_BASE_DIR": None,
+    "DISPLAY_BASE_URL": "",
 }
 
 _VALUE_PATTERN = r'(?:True|False|"(?:[^"\\]|\\.)*"|-?\d+)'
@@ -187,6 +188,8 @@ def build_effective_config(base_cfg) -> SimpleNamespace:
         # Duong dan hien thi de bam mo file tren Windows (o S:). Config cu chua co
         # bien nay -> fallback ve chinh download_base_dir (giu nguyen hanh vi cu).
         DISPLAY_BASE_DIR=getattr(base_cfg, "DISPLAY_BASE_DIR", None) or str(download_base_dir),
+        # URL web toi NAS de bam mo file tren dien thoai/Tailscale. "" -> giu link file://.
+        DISPLAY_BASE_URL=getattr(base_cfg, "DISPLAY_BASE_URL", "") or "",
         EXCEL_FILE=base_cfg.EXCEL_FILE,
         HISTORY_DB=getattr(base_cfg, "HISTORY_DB", download_base_dir / "doffice_auto_history.sqlite3"),
         LOGS_DIR=getattr(base_cfg, "LOGS_DIR", download_base_dir / "logs"),

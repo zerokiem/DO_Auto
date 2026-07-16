@@ -270,6 +270,16 @@ code {
 /* ---------- Tables ---------- */
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+/* Khung cuon rieng cho bang Excel: cuon trong khung, khong keo dai ca trang.
+   Header dinh (sticky) o dau khung khi cuon. */
+.table-wrap.excel-scroll { max-height: 68vh; overflow-y: auto; }
+
+.excel-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 10px; }
+.excel-toolbar label { font-size: 13px; color: var(--text-muted); }
+.limit-select {
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font-size: 13px;
+}
 
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .data-table.excel-table { table-layout: fixed; min-width: 100%; }

@@ -17,6 +17,9 @@ services:
       # cac may cua ban, thu muc du lieu NAS (/volume1/homes/binhnx/Working/Van_ban)
       # duoc map vao o S: -> S:\Working\Van_ban. Sua lai neu may ban map o dia khac.
       - 'DOFFICE_DISPLAY_DIR=S:\Working\Van_ban'
+      # Hyperlink ten file trong Excel tro toi NAS qua web (dia chi Tailscale co
+      # dinh) de bam mo duoc tren dien thoai co Tailscale. Doi IP/cong neu khac.
+      - 'DOFFICE_DISPLAY_URL=http://100.100.1.254:8877/vb'
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       # Code (chua config.py, do_auto/, webapp/, playwright/.auth/state.json ...)

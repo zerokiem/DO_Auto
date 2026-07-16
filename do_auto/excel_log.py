@@ -11,8 +11,10 @@ doi ten sheet dang active.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Dict, Set
+from urllib.parse import quote
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -227,7 +229,33 @@ def to_display_folder(actual_folder, download_base, display_base) -> str:
     return display_base + "\\" + str(rel).replace("/", "\\")
 
 
-def append_excel_log(excel_file: Path, sheet_name: str, title_text: str, data: Dict[str, str]) -> None:
+def subdir_of(folder: str) -> str:
+    """Lay thanh phan cuoi cua duong dan thu muc (ten thu muc con), du duong dan
+    la kieu Windows ('S:\\..\\VB_Chu_tri_da_XL') hay POSIX ('/data/VB_Chu_tri_da_XL')."""
+    parts = [p for p in re.split(r"[\\/]+", str(folder).strip()) if p and p not in (".", "..")]
+    return parts[-1] if parts else ""
+
+
+def build_file_link(folder: str, filename: str, link_base: str) -> str:
+    """Tao gia tri hyperlink cho cot 'Ten file luu'.
+
+    - Neu link_base la URL web (http/https, vd 'http://100.100.1.254:8877/vb') thi
+      tra ve URL toi NAS qua web: link_base/<thu_muc_con>/<ten_file>. Bam mo duoc
+      tren dien thoai co Tailscale va moi thiet bi trong mang.
+    - Nguoc lai (link_base rong) thi tra ve link file:// tren duong dan hien thi
+      (o S:) nhu truoc."""
+    if link_base and (link_base.startswith("http://") or link_base.startswith("https://")):
+        segs = []
+        sub = subdir_of(folder)
+        if sub:
+            segs.append(quote(sub, safe=""))
+        segs.append(quote(filename, safe=""))
+        return link_base.rstrip("/") + "/" + "/".join(segs)
+    sep = "\\" if ("\\" in folder or (len(folder) >= 2 and folder[1] == ":")) else "/"
+    return file_uri_from_path(folder.rstrip("/\\") + sep + filename)
+
+
+def append_excel_log(excel_file: Path, sheet_name: str, title_text: str, data: Dict[str, str], file_link_base: str = "") -> None:
     init_excel_log(excel_file, sheet_name, title_text)
 
     wb = load_workbook(excel_file)
@@ -261,12 +289,9 @@ def append_excel_log(excel_file: Path, sheet_name: str, title_text: str, data: D
     saved_name = data.get("ten_file_luu", "")
     if saved_folder and saved_name:
         file_cell = ws.cell(row=ws.max_row, column=12)
-        # Noi thu muc + ten file bang dung kieu separator cua thu muc (Windows
-        # '\\' hay POSIX '/') - KHONG dung Path() vi tren Linux no se hieu sai
-        # duong dan Windows 'S:\\...' thanh 1 thanh phan duy nhat.
-        sep = "\\" if ("\\" in saved_folder or (len(saved_folder) >= 2 and saved_folder[1] == ":")) else "/"
-        saved_path = saved_folder.rstrip("/\\") + sep + saved_name
-        file_cell.hyperlink = file_uri_from_path(saved_path)
+        # Link tro toi NAS qua web (neu co DISPLAY_BASE_URL) de mo duoc tren dien
+        # thoai/Tailscale; nguoc lai la link file:// tren o S:. Xem build_file_link.
+        file_cell.hyperlink = build_file_link(saved_folder, saved_name, file_link_base)
         file_cell.style = "Hyperlink"
         file_cell.comment = None
 

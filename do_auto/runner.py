@@ -144,7 +144,9 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
             data["ten_file_luu"] = ""
 
         data["thoi_gian_luu"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        excel_log.append_excel_log(cfg.EXCEL_FILE, task.sheet_name, task.title_text, data)
+        excel_log.append_excel_log(
+            cfg.EXCEL_FILE, task.sheet_name, task.title_text, data, getattr(cfg, "DISPLAY_BASE_URL", "")
+        )
 
         documents.append(
             {
