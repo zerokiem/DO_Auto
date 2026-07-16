@@ -4,6 +4,11 @@
 *.png
 **/screenshot/
 
+# --- Các file log ---
+*.log
+*.pyc
+*.lnk
+
 # --- Các file login ---
 **/.auth/
 

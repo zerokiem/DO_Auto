@@ -9,7 +9,7 @@ $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
 
 # --- CHINH LAI 2 BIEN NAY CHO DUNG TREN MAY BAN ---
-$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Auto"
+$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\DO_Auto"
 $PythonExe = Join-Path $ProjectDir ".venv\Scripts\python.exe"
 
 # Tham so truyen cho run_doffice.py. Mac dinh chay ca 3 tac vu (--all).

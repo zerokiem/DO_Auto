@@ -11,7 +11,7 @@
 # Chay PowerShell voi quyen phu hop (Run as Administrator neu gap loi quyen).
 
 $TaskName = "DOffice Web Dashboard"
-$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Auto"
+$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\DO_Auto"
 $PythonwExe = Join-Path $ProjectDir ".venv\Scripts\pythonw.exe"
 $Script = Join-Path $ProjectDir "run_web.py"
 

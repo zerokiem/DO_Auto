@@ -9,7 +9,7 @@
 # neu gap loi quyen truy cap.
 
 $TaskName = "DOffice Auto Schedule"
-$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Auto"
+$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\DO_Auto"
 $Runner = Join-Path $ProjectDir "run_all_doffice.ps1"
 
 # Sua danh sach gio chay tai day (co the them/bot, khong gioi han 2 hay 3 gio).

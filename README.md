@@ -115,7 +115,7 @@ python --version
 ## 3. Cài đặt môi trường lần đầu
 
 ```powershell
-cd "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Auto"
+cd "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\DO_Auto"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip

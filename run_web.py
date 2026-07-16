@@ -30,7 +30,8 @@ import webbrowser
 
 from webapp.app import app
 
-HOST = "127.0.0.1"  # doi thanh "0.0.0.0" de truy cap tu may khac qua Tailscale/LAN
+#HOST = "127.0.0.1"  # doi thanh "0.0.0.0" de truy cap tu may khac qua Tailscale/LAN
+HOST = "0.0.0.0"
 PORT = 8877
 
 
