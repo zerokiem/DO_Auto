@@ -248,37 +248,42 @@ def excel_download():
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
+    # Dung effective_cfg (qua settings_store, co getattr + fallback mac dinh)
+    # thay vi doc truc tiep base_config.X lam gia tri fallback ben duoi - de
+    # KHONG BAO GIO crash du config.py cua nguoi dung cu hon code hien tai.
+    effective_cfg = settings_store.build_effective_config(base_config)
+
     if request.method == "POST":
         doffice_url = request.form.get("doffice_url", "").strip()
         common_updates = {
             "STOP_WHEN_DUPLICATE_FOUND": request.form.get("stop_when_duplicate_found") == "on",
-            "DUPLICATE_CHECK_MODE": request.form.get("duplicate_check_mode", base_config.DUPLICATE_CHECK_MODE),
+            "DUPLICATE_CHECK_MODE": request.form.get("duplicate_check_mode", effective_cfg.DUPLICATE_CHECK_MODE),
             "ENABLE_TELEGRAM_NOTIFY": request.form.get("enable_telegram_notify") == "on",
-            "TELEGRAM_BOT_TOKEN": request.form.get("telegram_bot_token", base_config.TELEGRAM_BOT_TOKEN).strip(),
-            "TELEGRAM_CHAT_ID": request.form.get("telegram_chat_id", base_config.TELEGRAM_CHAT_ID).strip(),
+            "TELEGRAM_BOT_TOKEN": request.form.get("telegram_bot_token", effective_cfg.TELEGRAM_BOT_TOKEN).strip(),
+            "TELEGRAM_CHAT_ID": request.form.get("telegram_chat_id", effective_cfg.TELEGRAM_CHAT_ID).strip(),
             "TELEGRAM_NOTIFY_ONLY_IF_NEW": request.form.get("telegram_notify_only_if_new") == "on",
         }
         if doffice_url:
             common_updates["DOFFICE_URL"] = doffice_url
         try:
-            common_updates["SLOW_MO_MS"] = int(request.form.get("slow_mo_ms", base_config.SLOW_MO_MS))
+            common_updates["SLOW_MO_MS"] = int(request.form.get("slow_mo_ms", effective_cfg.SLOW_MO_MS))
         except (TypeError, ValueError):
-            common_updates["SLOW_MO_MS"] = base_config.SLOW_MO_MS
+            common_updates["SLOW_MO_MS"] = effective_cfg.SLOW_MO_MS
 
         error = None
         try:
             settings_store.update_common_fields(common_updates)
-            for key, base_task in base_config.TASKS.items():
+            for key, eff_task in effective_cfg.TASKS.items():
                 try:
-                    max_docs = int(request.form.get(f"{key}_max_documents") or base_task.max_documents)
+                    max_docs = int(request.form.get(f"{key}_max_documents") or eff_task.max_documents)
                 except (TypeError, ValueError):
-                    max_docs = base_task.max_documents
+                    max_docs = eff_task.max_documents
 
                 settings_store.update_task_fields(
                     key,
                     {
                         "enabled": request.form.get(f"{key}_enabled") == "on",
-                        "role_pattern": request.form.get(f"{key}_role_pattern", base_task.role_pattern).strip(),
+                        "role_pattern": request.form.get(f"{key}_role_pattern", eff_task.role_pattern).strip(),
                         "max_documents": max_docs,
                         "enable_finish": request.form.get(f"{key}_enable_finish") == "on",
                         "enable_download_pdf": request.form.get(f"{key}_enable_download_pdf") == "on",
@@ -293,7 +298,6 @@ def settings_page():
             return redirect(url_for("settings_page", error=error))
         return redirect(url_for("settings_page", saved=1))
 
-    effective_cfg = settings_store.build_effective_config(base_config)
     tasks = _ordered_tasks(effective_cfg)
     common = {
         "DOFFICE_URL": effective_cfg.DOFFICE_URL,

@@ -123,10 +123,12 @@ class RunManager:
             effective_cfg = settings_store.build_effective_config(self.cfg_module)
 
             if test_mode:
+                default_overrides = {"max_documents": 1, "enable_finish": False, "ask_confirm_before_finish": True}
+                overrides = getattr(self.cfg_module, "TEST_MODE_OVERRIDES", default_overrides)
                 for task in effective_cfg.TASKS.values():
-                    for field, value in self.cfg_module.TEST_MODE_OVERRIDES.items():
+                    for field, value in overrides.items():
                         setattr(task, field, value)
-                effective_cfg.SLOW_MO_MS = self.cfg_module.TEST_MODE_SLOW_MO_MS
+                effective_cfg.SLOW_MO_MS = getattr(self.cfg_module, "TEST_MODE_SLOW_MO_MS", 800)
 
             # AN TOAN CHO WEB: web server khong co terminal dinh kem de nguoi dung
             # go y/n hay bam Enter, nen LUON tat xac nhan tung buoc va khong bao

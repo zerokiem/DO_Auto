@@ -83,11 +83,13 @@ def interactive_menu(effective_cfg) -> list[str]:
 
 def apply_test_mode(effective_cfg) -> None:
     print("🧪 CHẾ ĐỘ TEST AN TOÀN: áp dụng config.TEST_MODE_OVERRIDES cho mọi tác vụ.\n")
-    effective_cfg.PAUSE_BEFORE_CLOSE = config.TEST_MODE_PAUSE_BEFORE_CLOSE
-    effective_cfg.SLOW_MO_MS = config.TEST_MODE_SLOW_MO_MS
+    default_overrides = {"max_documents": 1, "enable_finish": False, "ask_confirm_before_finish": True}
+    overrides = getattr(config, "TEST_MODE_OVERRIDES", default_overrides)
+    effective_cfg.PAUSE_BEFORE_CLOSE = getattr(config, "TEST_MODE_PAUSE_BEFORE_CLOSE", True)
+    effective_cfg.SLOW_MO_MS = getattr(config, "TEST_MODE_SLOW_MO_MS", 800)
 
     for task in effective_cfg.TASKS.values():
-        for field, value in config.TEST_MODE_OVERRIDES.items():
+        for field, value in overrides.items():
             setattr(task, field, value)
 
 
