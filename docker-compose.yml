@@ -1,0 +1,24 @@
+# DOffice Auto - Project cho Container Manager (DSM 7.2) tren DS423.
+#
+# TRUOC KHI DUNG, sua lai 2 duong dan mount ben duoi cho khop may ban:
+#   - Dong "code":     /volume1/homes/binhnx/Working/Programming/DO_Auto  (noi ban dat code)
+#   - Dong "du lieu":  /volume1/homes/binhnx/Working/Van_ban             (noi luu PDF/Excel/log)
+services:
+  doffice:
+    build: .
+    image: doffice-auto:latest
+    container_name: doffice
+    restart: unless-stopped
+    ports:
+      - "8877:8877"
+    environment:
+      - DOFFICE_DATA_DIR=/data
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      # Code (chua config.py, do_auto/, webapp/, playwright/.auth/state.json ...)
+      - /volume1/homes/binhnx/Working/Programming/DO_Auto:/app
+      # Thu muc luu ket qua: PDF, Tong_hop_DOffice.xlsx, logs, history.sqlite3
+      - /volume1/homes/binhnx/Working/Van_ban:/data
+    # /dev/shm nho trong container; da bat --disable-dev-shm-usage cho Chromium
+    # nen 256m la du. Tang len neu gap loi tab crash.
+    shm_size: "256mb"

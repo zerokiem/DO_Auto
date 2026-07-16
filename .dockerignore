@@ -1,0 +1,13 @@
+.venv/
+venv/
+**/__pycache__/
+*.pyc
+.git/
+.gitignore
+scheduler_logs/
+*.log
+*.lock
+debug_*.png
+node_modules/
+# Khong gui browser Playwright cu (image da co san Chromium)
+ms-playwright/

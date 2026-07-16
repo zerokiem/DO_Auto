@@ -8,6 +8,7 @@
 #   2) Doi DOWNLOAD_BASE_DIR / AUTH_STATE neu muon luu o vi tri khac.
 #   3) Chay python login_save_state.py 1 lan de tao phien dang nhap rieng.
 # ==================================================================================
+import os
 from pathlib import Path
 
 from do_auto.task_types import TaskConfig
@@ -27,7 +28,11 @@ AUTH_STATE = Path("playwright/.auth/state.json")
 #   DOWNLOAD_BASE_DIR / "VB_Chu_tri_da_XL"
 #   DOWNLOAD_BASE_DIR / "VB_Phoi_hop"
 #   DOWNLOAD_BASE_DIR / "VB_Dang_doan_phoi_hop"
-DOWNLOAD_BASE_DIR = Path(r"D:\OneDrive - NPT\9. Jobs\Van_ban")
+# Uu tien bien moi truong DOFFICE_DATA_DIR (dat khi chay trong Docker tren NAS,
+# tro toi /data - la thu muc /volume1/homes/binhnx/Working/Van_ban duoc mount vao
+# container). Neu khong co bien do (vd dang chay truc tiep tren Windows) thi
+# quay ve duong dan Windows cu, nen file nay dung duoc o ca 2 moi truong.
+DOWNLOAD_BASE_DIR = Path(os.environ.get("DOFFICE_DATA_DIR") or r"D:\OneDrive - NPT\9. Jobs\Van_ban")
 
 # 1 file Excel duy nhat, gom du lieu cua ca 3 tac vu, moi tac vu 1 sheet rieng
 # (xem sheet_name trong tung TaskConfig ben duoi).

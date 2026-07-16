@@ -24,11 +24,13 @@ qua Tailscale, nen de "Chay an" (headless) vi se khong co ai o do de xem cua so.
 """
 from __future__ import annotations
 
+import sys
 import threading
 import time
 import webbrowser
 
-from webapp.app import app
+import config as base_config
+from webapp.app import app, run_manager
 
 #HOST = "127.0.0.1"  # doi thanh "0.0.0.0" de truy cap tu may khac qua Tailscale/LAN
 HOST = "0.0.0.0"
@@ -44,6 +46,15 @@ def _open_browser_later() -> None:
 
 
 if __name__ == "__main__":
-    threading.Thread(target=_open_browser_later, daemon=True).start()
+    if sys.platform == "win32":
+        # Tren NAS/Docker (khong man hinh) khong co trinh duyet nao de mo, va
+        # tab "Lich chay" tren Linux dung thread nen rieng (khong phai Windows
+        # Task Scheduler) - xem do_auto/inprocess_scheduler.py.
+        threading.Thread(target=_open_browser_later, daemon=True).start()
+    else:
+        from do_auto import inprocess_scheduler
+
+        inprocess_scheduler.start_background_scheduler(run_manager, base_config)
+
     print(f"DOffice web dashboard: http://{HOST}:{PORT}   (Ctrl+C để dừng)")
     app.run(host=HOST, port=PORT, threaded=True, debug=False)

@@ -97,7 +97,7 @@ class RunManager:
             ],
         }
 
-    def start(self, task_keys: List[str], headless: bool, test_mode: bool) -> bool:
+    def start(self, task_keys: List[str], headless: bool, test_mode: bool, trigger_source: str = "web") -> bool:
         with self._lock:
             if self.is_running:
                 return False
@@ -106,11 +106,13 @@ class RunManager:
             self.started_at = datetime.now().isoformat(timespec="seconds")
             self.last_error = None
 
-        thread = threading.Thread(target=self._run, args=(task_keys, headless, test_mode), daemon=True)
+        thread = threading.Thread(
+            target=self._run, args=(task_keys, headless, test_mode, trigger_source), daemon=True
+        )
         thread.start()
         return True
 
-    def _run(self, task_keys: List[str], headless: bool, test_mode: bool) -> None:
+    def _run(self, task_keys: List[str], headless: bool, test_mode: bool, trigger_source: str = "web") -> None:
         original_stdout = sys.stdout
         sys.stdout = _TeeStream(self.broadcaster, original_stdout)
         try:
@@ -138,7 +140,7 @@ class RunManager:
                 task.ask_confirm_before_finish = False
 
             self.last_results = runner.run_selected_tasks(
-                task_keys, effective_cfg, headless=headless, trigger_source="web", test_mode=test_mode
+                task_keys, effective_cfg, headless=headless, trigger_source=trigger_source, test_mode=test_mode
             )
             self.broadcaster.publish("=== Đã chạy xong. Xem tổng kết ở trên hoặc trang Lịch sử. ===")
         except Exception as e:

@@ -227,7 +227,11 @@ def run_selected_tasks(
         results: List[TaskResult] = []
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=headless, slow_mo=cfg.SLOW_MO_MS)
+            # Tren Linux/Docker (NAS), Chromium chay bang user root trong container
+            # can --no-sandbox; /dev/shm trong container thuong nho nen them
+            # --disable-dev-shm-usage de tranh crash tab. Tren Windows khong can.
+            launch_args = ["--no-sandbox", "--disable-dev-shm-usage"] if sys.platform != "win32" else []
+            browser = p.chromium.launch(headless=headless, slow_mo=cfg.SLOW_MO_MS, args=launch_args)
             context = browser.new_context(
                 storage_state=str(cfg.AUTH_STATE),
                 accept_downloads=True,

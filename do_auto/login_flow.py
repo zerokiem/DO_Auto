@@ -10,6 +10,8 @@ dong), nen dung duoc Playwright sync API binh thuong.
 """
 from __future__ import annotations
 
+import os
+import sys
 import threading
 from typing import Callable
 
@@ -17,6 +19,16 @@ from playwright.sync_api import sync_playwright
 
 
 def run_interactive_login(cfg, ready_event: threading.Event, on_log: Callable[[str], None] = print) -> None:
+    # Tren NAS/Docker (Linux khong co man hinh), khong the mo cua so Chromium that
+    # de dang nhap tay. Bao loi ro rang thay vi de Playwright nem loi kho hieu:
+    # dang nhap tren Windows roi copy playwright/.auth/state.json len NAS.
+    if sys.platform != "win32" and not os.environ.get("DISPLAY"):
+        raise RuntimeError(
+            "Máy chủ này không có màn hình (NAS/Docker) nên không mở được cửa sổ đăng nhập. "
+            "Hãy chạy 'python login_save_state.py' trên máy Windows để đăng nhập, rồi copy file "
+            "playwright/.auth/state.json vào thư mục code trên NAS (xem README_NAS.md mục Đăng nhập)."
+        )
+
     auth_state = cfg.AUTH_STATE
     auth_state.parent.mkdir(parents=True, exist_ok=True)
 

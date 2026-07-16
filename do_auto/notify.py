@@ -50,9 +50,10 @@ def build_summary_message(results: List[TaskResult], trigger_source: str, test_m
 
         for doc in (r.documents or [])[:MAX_DOCS_LISTED_PER_TASK]:
             so_vb = _escape_html(doc.get("so_vb", ""))
+            # Giu NGUYEN VAN trich yeu (khong cat 70 ky tu nhu truoc). Neu tong tin
+            # nhan vuot gioi han Telegram, se tu tach thanh nhieu tin (xem
+            # split_message / send_telegram_summary) chu khong cat mat noi dung.
             trich_yeu = _escape_html(doc.get("trich_yeu", ""))
-            if len(trich_yeu) > 70:
-                trich_yeu = trich_yeu[:70] + "…"
             lines.append(f"  • {so_vb} - {trich_yeu}" if trich_yeu else f"  • {so_vb}")
 
         if len(r.documents or []) > MAX_DOCS_LISTED_PER_TASK:
@@ -62,10 +63,37 @@ def build_summary_message(results: List[TaskResult], trigger_source: str, test_m
 
     lines.append(f"<b>Tổng: {total_new} văn bản mới trong phiên này.</b>")
 
-    message = "\n".join(lines)
-    if len(message) > MAX_MESSAGE_LENGTH:
-        message = message[:MAX_MESSAGE_LENGTH] + "\n\n… (đã cắt bớt, xem đầy đủ trong Excel/Lịch sử)"
-    return message
+    # Tra ve NGUYEN VAN, khong cat. Viec tach tin cho vua gioi han Telegram do
+    # split_message() lo (khong mat noi dung).
+    return "\n".join(lines)
+
+
+def split_message(message: str, limit: int = MAX_MESSAGE_LENGTH) -> List[str]:
+    """Tach tin nhan dai thanh nhieu manh <= limit ky tu, uu tien cat theo dong
+    de khong lam vo the HTML. 1 dong don le van dai hon limit (vd trich yeu cuc
+    dai) se bi cat cung theo do dai ky tu nhu phuong an cuoi."""
+    if len(message) <= limit:
+        return [message]
+
+    chunks: List[str] = []
+    current = ""
+    for line in message.split("\n"):
+        while len(line) > limit:
+            # Dong don qua dai: cat cung theo ky tu.
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(line[:limit])
+            line = line[limit:]
+        candidate = line if not current else current + "\n" + line
+        if len(candidate) > limit:
+            chunks.append(current)
+            current = line
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
 
 
 def send_telegram_message(bot_token: str, chat_id: str, text: str) -> "tuple[bool, str]":
@@ -111,10 +139,19 @@ def notify_run_summary(cfg, results: List[TaskResult], trigger_source: str, test
             return
 
         message = build_summary_message(results, trigger_source, test_mode=test_mode)
-        ok, error = send_telegram_message(cfg.TELEGRAM_BOT_TOKEN, cfg.TELEGRAM_CHAT_ID, message)
-        if ok:
-            print("✅ Đã gửi tin nhắn tổng kết qua Telegram.")
+        parts = split_message(message)
+        all_ok = True
+        last_error = ""
+        for i, part in enumerate(parts, start=1):
+            text = part if len(parts) == 1 else f"<i>(phần {i}/{len(parts)})</i>\n{part}"
+            ok, error = send_telegram_message(cfg.TELEGRAM_BOT_TOKEN, cfg.TELEGRAM_CHAT_ID, text)
+            if not ok:
+                all_ok = False
+                last_error = error
+        if all_ok:
+            suffix = "" if len(parts) == 1 else f" ({len(parts)} tin)"
+            print(f"✅ Đã gửi tin nhắn tổng kết qua Telegram{suffix}.")
         else:
-            print(f"⚠️ Không gửi được tin nhắn tổng kết qua Telegram: {error}")
+            print(f"⚠️ Không gửi được tin nhắn tổng kết qua Telegram: {last_error}")
     except Exception as e:
         print(f"⚠️ Lỗi không mong muốn khi gửi Telegram: {e}")
