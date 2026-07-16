@@ -142,7 +142,7 @@ def main() -> None:
     print("AUTH_STATE:", effective_cfg.AUTH_STATE)
     print()
 
-    run_selected_tasks(task_keys, effective_cfg, headless=False, trigger_source=args.source)
+    run_selected_tasks(task_keys, effective_cfg, headless=False, trigger_source=args.source, test_mode=args.test)
 
 
 if __name__ == "__main__":

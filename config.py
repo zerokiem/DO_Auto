@@ -79,6 +79,25 @@ ROLE_BUTTON_NAME_HINT = ""
 
 
 # ----------------------------------------------------------------------------------
+# 1b) THONG BAO QUA TELEGRAM (tuy chon) - gui tin nhan tong ket sau moi phien
+#     chay (bao nhieu van ban moi, tu tac vu nao, co loi gi khong). Xem README
+#     de biet cach tao bot (@BotFather) va lay chat_id
+#     (chay python get_telegram_chat_id.py de duoc huong dan).
+#
+#     Cung co the bat/tat va dien token/chat_id truc tiep tren trang web Cai dat
+#     (khong can sua file nay bang tay).
+# ----------------------------------------------------------------------------------
+ENABLE_TELEGRAM_NOTIFY = False
+TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_CHAT_ID = ""
+# True = chi gui tin nhan khi CO IT NHAT 1 van ban moi (bo qua thong bao "0 van
+# ban moi" - do khi chay tu dong nhieu lan/ngay). False (mac dinh) = luon gui
+# sau moi phien chay, ke ca khi khong co gi moi (de biet chac automation van
+# dang chay binh thuong, khong bi lang le hong).
+TELEGRAM_NOTIFY_ONLY_IF_NEW = False
+
+
+# ----------------------------------------------------------------------------------
 # 2) CAU HINH RIENG TUNG TAC VU
 #
 #    role_pattern: go dung ten chuc danh hien thi trong menu "... Phòng ban:" tren

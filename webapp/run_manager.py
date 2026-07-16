@@ -136,7 +136,7 @@ class RunManager:
                 task.ask_confirm_before_finish = False
 
             self.last_results = runner.run_selected_tasks(
-                task_keys, effective_cfg, headless=headless, trigger_source="web"
+                task_keys, effective_cfg, headless=headless, trigger_source="web", test_mode=test_mode
             )
             self.broadcaster.publish("=== Đã chạy xong. Xem tổng kết ở trên hoặc trang Lịch sử. ===")
         except Exception as e:

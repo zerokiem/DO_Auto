@@ -171,6 +171,21 @@ def api_login_status():
     return jsonify(login_manager.status())
 
 
+@app.post("/api/telegram/test")
+def api_telegram_test():
+    payload = request.get_json(force=True, silent=True) or {}
+    bot_token = (payload.get("bot_token") or "").strip()
+    chat_id = (payload.get("chat_id") or "").strip()
+
+    from do_auto import notify
+
+    test_message = "✅ DOffice - đây là tin nhắn thử. Nếu bạn thấy tin này, cấu hình Telegram đã đúng."
+    ok, error = notify.send_telegram_message(bot_token, chat_id, test_message)
+    if ok:
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": error}), 400
+
+
 @app.route("/history")
 def history_page():
     effective_cfg = settings_store.build_effective_config(base_config)
@@ -238,6 +253,10 @@ def settings_page():
         common_updates = {
             "STOP_WHEN_DUPLICATE_FOUND": request.form.get("stop_when_duplicate_found") == "on",
             "DUPLICATE_CHECK_MODE": request.form.get("duplicate_check_mode", base_config.DUPLICATE_CHECK_MODE),
+            "ENABLE_TELEGRAM_NOTIFY": request.form.get("enable_telegram_notify") == "on",
+            "TELEGRAM_BOT_TOKEN": request.form.get("telegram_bot_token", base_config.TELEGRAM_BOT_TOKEN).strip(),
+            "TELEGRAM_CHAT_ID": request.form.get("telegram_chat_id", base_config.TELEGRAM_CHAT_ID).strip(),
+            "TELEGRAM_NOTIFY_ONLY_IF_NEW": request.form.get("telegram_notify_only_if_new") == "on",
         }
         if doffice_url:
             common_updates["DOFFICE_URL"] = doffice_url
@@ -281,6 +300,10 @@ def settings_page():
         "STOP_WHEN_DUPLICATE_FOUND": effective_cfg.STOP_WHEN_DUPLICATE_FOUND,
         "DUPLICATE_CHECK_MODE": effective_cfg.DUPLICATE_CHECK_MODE,
         "SLOW_MO_MS": effective_cfg.SLOW_MO_MS,
+        "ENABLE_TELEGRAM_NOTIFY": effective_cfg.ENABLE_TELEGRAM_NOTIFY,
+        "TELEGRAM_BOT_TOKEN": effective_cfg.TELEGRAM_BOT_TOKEN,
+        "TELEGRAM_CHAT_ID": effective_cfg.TELEGRAM_CHAT_ID,
+        "TELEGRAM_NOTIFY_ONLY_IF_NEW": effective_cfg.TELEGRAM_NOTIFY_ONLY_IF_NEW,
     }
     saved = request.args.get("saved") == "1"
     error = request.args.get("error")

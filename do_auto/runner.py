@@ -5,7 +5,6 @@ duyet 1 lan cho du chon 1, 2 hay ca 3 tac vu.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List
@@ -14,17 +13,8 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
-from . import browser_nav, excel_log, extract, finish_doc, history, log_capture, pdf_download, text_utils
-from .task_types import TaskConfig
-
-
-@dataclass
-class TaskResult:
-    key: str
-    label: str
-    ok: bool
-    processed: int
-    note: str = ""
+from . import browser_nav, excel_log, extract, finish_doc, history, log_capture, notify, pdf_download, text_utils
+from .task_types import TaskConfig, TaskResult
 
 
 def run_task(page, task: TaskConfig, cfg) -> TaskResult:
@@ -46,6 +36,7 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
 
     processed = 0
     current_index = 0
+    documents: List[dict] = []
 
     while processed < task.max_documents:
         print("\n" + "=" * 70)
@@ -151,6 +142,14 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
         data["thoi_gian_luu"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         excel_log.append_excel_log(cfg.EXCEL_FILE, task.sheet_name, task.title_text, data)
 
+        documents.append(
+            {
+                "so_vb": data.get("so_vb", ""),
+                "ngay_vb": data.get("ngay_vb", ""),
+                "trich_yeu": data.get("trich_yeu", ""),
+            }
+        )
+
         existing_keys.add(duplicate_key)
         if data.get("ten_file_luu"):
             existing_filenames.add(text_utils.normalize_key(data["ten_file_luu"]))
@@ -163,7 +162,7 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
         text_utils.wait(page, 1500)
 
     print(f"\n✅ Hoàn tất tác vụ {task.label}. Đã ghi mới {processed} văn bản.")
-    return TaskResult(task.key, task.label, ok=True, processed=processed)
+    return TaskResult(task.key, task.label, ok=True, processed=processed, documents=documents)
 
 
 def print_summary(results: List[TaskResult]) -> None:
@@ -183,6 +182,7 @@ def run_selected_tasks(
     *,
     headless: bool = False,
     trigger_source: str = "cli",
+    test_mode: bool = False,
 ) -> List[TaskResult]:
     """Chay 1 hoac nhieu tac vu trong CUNG 1 phien trinh duyet.
 
@@ -194,6 +194,10 @@ def run_selected_tasks(
     trigger_source: ghi vao lich su (HISTORY_DB) cho biet lan chay nay bat nguon
         tu "cli" (chay tay), "scheduler" (Task Scheduler/run_all_doffice.ps1),
         hay "web".
+    test_mode: chi de GHI CHU trong tin nhan Telegram tong ket (xem
+        do_auto/notify.py) - khong tu no thay doi hanh vi tu dong hoa (cac gia
+        tri nhu max_documents=1 phai duoc chinh san trong cfg truoc khi goi ham
+        nay, vi du qua run_doffice.py --test).
 
     MOI LAN GOI HAM NAY (bat ke tu dau) deu tu tao 1 file log rieng trong
     cfg.LOGS_DIR, khong chi rieng khi chay qua Scheduled Task - xem
@@ -273,6 +277,12 @@ def run_selected_tasks(
                 browser.close()
 
         print_summary(results)
+
+        try:
+            notify.notify_run_summary(cfg, results, trigger_source, test_mode=test_mode)
+        except Exception as e:
+            print(f"⚠️ Không gửi được thông báo tổng kết: {e}")
+
         print(f"\n=== Kết thúc: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
         print(f"=== File log này: {log_path} ===")
         return results

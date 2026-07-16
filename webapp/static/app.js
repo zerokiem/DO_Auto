@@ -203,6 +203,42 @@
     if (btn) btn.disabled = false;
   }
 
+  // ---------- Gui thu Telegram ----------
+
+  async function testTelegram() {
+    const btn = document.getElementById("telegram-test-btn");
+    const resultEl = document.getElementById("telegram-test-result");
+    const tokenEl = document.getElementById("telegram_bot_token");
+    const chatIdEl = document.getElementById("telegram_chat_id");
+    if (!btn || !resultEl || !tokenEl || !chatIdEl) return;
+
+    const botToken = tokenEl.value.trim();
+    const chatId = chatIdEl.value.trim();
+    if (!botToken || !chatId) {
+      resultEl.textContent = "Điền Bot Token và Chat ID trước khi gửi thử.";
+      resultEl.hidden = false;
+      return;
+    }
+
+    btn.disabled = true;
+    resultEl.hidden = true;
+    try {
+      const res = await fetch("/api/telegram/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bot_token: botToken, chat_id: chatId }),
+      });
+      const data = await res.json();
+      resultEl.textContent = data.ok
+        ? "✅ Đã gửi tin nhắn thử, kiểm tra Telegram."
+        : "❌ Gửi thất bại: " + (data.error || "không rõ lỗi.");
+    } catch (e) {
+      resultEl.textContent = "❌ Không gọi được máy chủ.";
+    }
+    resultEl.hidden = false;
+    btn.disabled = false;
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const runBtn = document.getElementById("run-btn");
     if (runBtn) {
@@ -216,6 +252,10 @@
     const loginConfirmBtn = document.getElementById("login-confirm-btn");
     if (loginConfirmBtn) {
       loginConfirmBtn.addEventListener("click", confirmLogin);
+    }
+    const telegramTestBtn = document.getElementById("telegram-test-btn");
+    if (telegramTestBtn) {
+      telegramTestBtn.addEventListener("click", testTelegram);
     }
 
     // Neu mo lai trang trong luc dang co 1 lan chay dien ra (vd nguoi dung

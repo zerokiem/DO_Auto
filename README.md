@@ -37,6 +37,7 @@ DO_Auto/
 ├─ run_doffice.py                     # Chạy chương trình bằng CLI/PowerShell
 ├─ run_web.py                         # Chạy bảng điều khiển web (mục 7)
 ├─ login_save_state.py                # Đăng nhập thủ công 1 lần, lưu phiên (bản CLI)
+├─ get_telegram_chat_id.py            # Tìm Chat ID Telegram (mục 15.2)
 ├─ migrate_old_excel.py               # (tuỳ chọn) gộp 3 file Excel cũ vào file mới
 ├─ requirements.txt
 ├─ run_all_doffice.ps1                # Chạy tất cả tác vụ, dùng thủ công hoặc Task Scheduler
@@ -55,6 +56,7 @@ DO_Auto/
 │  ├─ finish_doc.py                   # Bấm "Kết thúc nhanh" + "Lưu"
 │  ├─ log_capture.py                  # "Tee" stdout ra file - MỌI lần chạy đều có log
 │  ├─ history.py                      # Ghi/đọc lịch sử chạy (SQLite) - CLI, Scheduled Task, web dùng chung
+│  ├─ notify.py                       # Gửi tin nhắn tổng kết qua Telegram sau mỗi phiên chạy (mục 15)
 │  ├─ settings_store.py               # Đọc/ghi trực tiếp config.py cho trang Cài đặt trên web
 │  ├─ login_flow.py                   # Đăng nhập DOffice điều khiển được từ web (nút "Đăng nhập lại")
 │  ├─ scheduler.py                    # Quản lý 1 Windows Scheduled Task nhiều trigger (trang "Lịch chạy")
@@ -569,7 +571,75 @@ trước khi chạy thật.
 
 ---
 
-## 14. Giới hạn hiện tại của bảng điều khiển web
+## 15. Thông báo qua Telegram (tuỳ chọn)
+
+Sau mỗi phiên chạy (dù chạy tay, Task Scheduler, hay web), hệ thống có thể tự
+gửi 1 tin nhắn Telegram tổng kết: tác vụ nào chạy, bao nhiêu văn bản mới, số
+VB + trích yếu của từng văn bản mới (tối đa 10 dòng/tác vụ), và báo lỗi nếu có
+tác vụ nào thất bại.
+
+**Vì sao chọn Telegram**: miễn phí hoàn toàn, không giới hạn, API chính thức
+đơn giản (1 request HTTP là gửi được tin nhắn), không cần xác minh doanh
+nghiệp như Zalo Official Account hay WhatsApp Business API (2 dịch vụ này khó
+dùng cho 1 người/nội bộ, phải qua duyệt của Meta/Zalo). Các thư viện
+WhatsApp/Zalo "không chính thức" (đăng nhập bằng quét QR như Baileys) vi phạm
+điều khoản dịch vụ và dễ bị khoá tài khoản, nên không dùng ở đây.
+
+### 15.1 Tạo bot Telegram (1 lần duy nhất)
+
+1. Mở Telegram, tìm và nhắn tin cho **@BotFather**.
+2. Gửi lệnh `/newbot`, đặt tên bot, đặt username (phải kết thúc bằng `bot`, vd
+   `doffice_binh_bot`).
+3. BotFather trả về 1 chuỗi **token** dạng
+   `123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` – copy lại.
+4. Tìm đúng bot vừa tạo (theo username đã đặt), nhắn 1 tin bất kỳ (vd "hi") để
+   bot "biết" cuộc trò chuyện với bạn tồn tại. Muốn nhận tin trong 1 nhóm thay
+   vì tin nhắn riêng, add bot vào nhóm rồi nhắn 1 tin trong nhóm đó.
+
+### 15.2 Lấy Chat ID
+
+```powershell
+python get_telegram_chat_id.py
+```
+
+Script hỏi Bot Token (hoặc tự đọc từ `config.py` nếu đã điền sẵn), gọi
+Telegram để tìm các cuộc trò chuyện gần đây, in ra Chat ID tương ứng (số dương
+= nhắn riêng, số âm = trong nhóm).
+
+### 15.3 Bật thông báo
+
+Điền vào `config.py`:
+
+```python
+ENABLE_TELEGRAM_NOTIFY = True
+TELEGRAM_BOT_TOKEN = "123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+TELEGRAM_CHAT_ID = "111222333"
+TELEGRAM_NOTIFY_ONLY_IF_NEW = False  # True = chỉ gửi khi có văn bản mới
+```
+
+**Hoặc** vào trang web **Cài đặt** &rsaquo; mục "Thông báo qua Telegram", điền
+Bot Token + Chat ID, bấm **"Gửi thử"** để kiểm tra ngay trước khi lưu (không
+cần đợi chạy thật 1 tác vụ mới biết cấu hình đúng hay sai), rồi bấm "Lưu cài
+đặt" — ghi thẳng vào `config.py` như mọi mục khác (mục 7.5).
+
+### 15.4 Hành vi
+
+- Mặc định (`TELEGRAM_NOTIFY_ONLY_IF_NEW = False`): gửi tin nhắn sau **mọi**
+  phiên chạy, kể cả khi không có văn bản mới nào — để biết chắc automation vẫn
+  đang chạy bình thường, không âm thầm hỏng (vd DOffice đổi giao diện làm
+  script không mở được danh sách vẫn sẽ báo lỗi qua Telegram).
+- Đặt `TELEGRAM_NOTIFY_ONLY_IF_NEW = True` nếu chạy tự động nhiều lần/ngày và
+  chỉ muốn được thông báo khi thực sự có văn bản mới, đỡ nhiễu.
+- Chạy ở `--test`/chế độ test trên web vẫn gửi thông báo bình thường, có gắn
+  thêm nhãn `[CHẾ ĐỘ TEST]` đầu tin nhắn để phân biệt với phiên chạy thật.
+- Gửi thất bại (sai token, mất mạng...) chỉ in cảnh báo ra log, **không bao
+  giờ** làm hỏng hay dừng phiên chạy đang xử lý văn bản.
+- Tin nhắn dài quá giới hạn Telegram (4096 ký tự) sẽ tự cắt bớt, kèm ghi chú
+  xem đầy đủ trong Excel/trang Lịch sử.
+
+---
+
+## 16. Giới hạn hiện tại của bảng điều khiển web
 
 Ghi chú thẳng thắn để bạn không bất ngờ khi dùng:
 

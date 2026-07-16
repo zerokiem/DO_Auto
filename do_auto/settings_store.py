@@ -39,6 +39,10 @@ COMMON_FIELD_RENDER = {
     "STOP_WHEN_DUPLICATE_FOUND": lambda v: "True" if v else "False",
     "DUPLICATE_CHECK_MODE": lambda v: json.dumps(str(v), ensure_ascii=False),
     "SLOW_MO_MS": lambda v: str(int(v)),
+    "ENABLE_TELEGRAM_NOTIFY": lambda v: "True" if v else "False",
+    "TELEGRAM_BOT_TOKEN": lambda v: json.dumps(str(v), ensure_ascii=False),
+    "TELEGRAM_CHAT_ID": lambda v: json.dumps(str(v), ensure_ascii=False),
+    "TELEGRAM_NOTIFY_ONLY_IF_NEW": lambda v: "True" if v else "False",
 }
 
 _VALUE_PATTERN = r'(?:True|False|"(?:[^"\\]|\\.)*"|-?\d+)'
@@ -128,5 +132,9 @@ def build_effective_config(base_cfg) -> SimpleNamespace:
         SLOW_MO_MS=base_cfg.SLOW_MO_MS,
         PAUSE_BEFORE_CLOSE=base_cfg.PAUSE_BEFORE_CLOSE,
         ROLE_BUTTON_NAME_HINT=base_cfg.ROLE_BUTTON_NAME_HINT,
+        ENABLE_TELEGRAM_NOTIFY=base_cfg.ENABLE_TELEGRAM_NOTIFY,
+        TELEGRAM_BOT_TOKEN=base_cfg.TELEGRAM_BOT_TOKEN,
+        TELEGRAM_CHAT_ID=base_cfg.TELEGRAM_CHAT_ID,
+        TELEGRAM_NOTIFY_ONLY_IF_NEW=base_cfg.TELEGRAM_NOTIFY_ONLY_IF_NEW,
         TASKS=deepcopy(base_cfg.TASKS),
     )

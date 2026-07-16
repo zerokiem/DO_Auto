@@ -13,8 +13,8 @@ Khong can dong vao code logic trong cac module khac.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -62,3 +62,16 @@ class TaskConfig:
     title_text: str = "TỔNG HỢP VĂN BẢN"  # tieu de lon o dong 1 cua sheet
     sheet_order: int = 99  # thu tu sheet trong workbook (1, 2, 3...)
     debug_prefix: str = "doffice"  # tien to ten file anh debug khi loi
+
+
+@dataclass
+class TaskResult:
+    key: str
+    label: str
+    ok: bool
+    processed: int
+    note: str = ""
+    # Tom tat cac van ban MOI da ghi thanh cong trong lan chay nay (so_vb,
+    # ngay_vb, trich_yeu) - dung de gui tin nhan tong ket qua Telegram
+    # (xem do_auto/notify.py). Rong neu processed=0 hoac ok=False.
+    documents: List[Dict[str, str]] = field(default_factory=list)
