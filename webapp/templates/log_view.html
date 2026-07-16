@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ filename }} - DOffice{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h1>Nhật ký: {{ filename }}</h1>
+      <p><a href="{{ url_for('history_page') }}">&larr; Quay lại Lịch sử</a></p>
+    </div>
+  </div>
+  <pre class="console console-static">{{ content }}</pre>
+</section>
+{% endblock %}

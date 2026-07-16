@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Excel - DOffice Auto{% endblock %}
+{% block title %}Excel - DOffice{% endblock %}
 
 {% block content %}
 <section class="panel">
@@ -25,7 +25,12 @@
   <input type="text" id="excel-search" class="search-box" placeholder="Lọc theo Số VB, trích yếu, nơi phát hành...">
   <p class="hint">Hiện {{ row_count }} dòng gần nhất (mới nhất ở trên). Tải file Excel để xem đầy đủ.</p>
   <div class="table-wrap">
-    <table class="data-table" id="excel-table">
+    <table class="data-table excel-table" id="excel-table">
+      <colgroup>
+        {% for col in columns %}
+        {% if col != "Thời gian chỉ đạo" %}<col style="width: {{ column_widths.get(col, 15) }}ch">{% endif %}
+        {% endfor %}
+      </colgroup>
       <thead>
         <tr>
           {% for col in columns %}

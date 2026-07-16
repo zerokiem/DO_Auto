@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Lịch sử - DOffice Auto{% endblock %}
+{% block title %}Lịch sử - DOffice{% endblock %}
 
 {% block content %}
 <section class="panel">
   <div class="panel-head">
     <h1>Lịch sử chạy</h1>
-    <p>150 lần chạy gần nhất, cả từ CLI/PowerShell lẫn từ web. Mới nhất ở trên.</p>
+    <p>150 lần chạy gần nhất, gồm cả chạy tay (cli), Task Scheduler (scheduler), lẫn từ web. Mới nhất ở trên.</p>
   </div>
 
   {% if not rows %}
@@ -22,6 +22,7 @@
           <th>Ghi mới</th>
           <th>Nguồn</th>
           <th>Ghi chú</th>
+          <th>Nhật ký</th>
         </tr>
       </thead>
       <tbody>
@@ -36,6 +37,13 @@
           <td>{{ r.processed }}</td>
           <td><span class="badge badge-muted">{{ r.trigger_source }}</span></td>
           <td class="note-cell">{{ r.note }}</td>
+          <td>
+            {% if r.log_file %}
+            <a href="{{ url_for('view_log', filename=r.log_file) }}">Xem log</a>
+            {% else %}
+            <span class="text-muted">&mdash;</span>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

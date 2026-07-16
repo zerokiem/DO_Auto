@@ -13,9 +13,11 @@ $ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Aut
 $PythonExe = Join-Path $ProjectDir ".venv\Scripts\python.exe"
 
 # Tham so truyen cho run_doffice.py. Mac dinh chay ca 3 tac vu (--all).
-# Vi du chi chay 2 tac vu: "--tasks", "chu_tri,phoi_hop"
+# --source scheduler de trang Lich su tren web phan biet duoc lan chay nay la
+# tu Task Scheduler, khong phai ai do tu go lenh chay tay.
+# Vi du chi chay 2 tac vu: "--tasks", "chu_tri,phoi_hop", "--source", "scheduler"
 # Them "--test" khi muon chay o che do test an toan.
-$RunnerArgs = @("--all", "--no-pause")
+$RunnerArgs = @("--all", "--no-pause", "--source", "scheduler")
 
 $LogDir = Join-Path $ProjectDir "scheduler_logs"
 $LockFile = Join-Path $ProjectDir ".doffice_auto_running.lock"

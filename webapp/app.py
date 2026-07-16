@@ -1,5 +1,5 @@
 """
-Flask app cho DOffice Auto web dashboard.
+Flask app cho DOffice web dashboard.
 
 Day la cong cu NOI BO chay tren may cua ban (hoac 1 may trong mang noi bo/
 Tailscale), KHONG co lop dang nhap rieng - vi Playwright/Chromium can chay
@@ -11,17 +11,27 @@ from __future__ import annotations
 import json
 import queue
 import time
+from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_file, url_for
 
 import config as base_config
-from do_auto import excel_log, history, settings_store
+from do_auto import excel_log, history, scheduler as scheduler_mod, settings_store
+from webapp.login_manager import LoginManager
 from webapp.run_manager import RunManager
+
+PROJECT_DIR = Path(__file__).resolve().parent.parent
 
 app = Flask(__name__)
 app.jinja_env.globals["zip"] = zip
 run_manager = RunManager(base_config)
+login_manager = LoginManager(base_config)
+
+
+@app.context_processor
+def inject_globals():
+    return {"current_year": datetime.now().year}
 
 
 def _ordered_tasks(cfg):
@@ -77,6 +87,7 @@ def dashboard():
         recent_by_task=recent_by_task,
         auth=_auth_state_info(effective_cfg),
         status=run_manager.status(),
+        login_status=login_manager.status(),
         excel_file=str(effective_cfg.EXCEL_FILE),
     )
 
@@ -100,7 +111,8 @@ def api_run():
             jsonify(
                 {
                     "started": False,
-                    "error": "Chưa có phiên đăng nhập. Chạy 'python login_save_state.py' trên máy này trước.",
+                    "error": "Chưa có phiên đăng nhập. Bấm 'Đăng nhập lại' ở trên hoặc chạy "
+                    "'python login_save_state.py' trên máy này trước.",
                 }
             ),
             400,
@@ -138,11 +150,46 @@ def api_logs_stream():
     return Response(gen(), mimetype="text/event-stream")
 
 
+@app.post("/api/login/start")
+def api_login_start():
+    started = login_manager.start()
+    if not started:
+        return jsonify({"started": False, "error": "Đang có 1 lượt đăng nhập khác đang mở."}), 409
+    return jsonify({"started": True})
+
+
+@app.post("/api/login/confirm")
+def api_login_confirm():
+    ok = login_manager.confirm()
+    if not ok:
+        return jsonify({"ok": False, "error": "Chưa có lượt đăng nhập nào đang chờ xác nhận."}), 400
+    return jsonify({"ok": True})
+
+
+@app.get("/api/login/status")
+def api_login_status():
+    return jsonify(login_manager.status())
+
+
 @app.route("/history")
 def history_page():
     effective_cfg = settings_store.build_effective_config(base_config)
     rows = history.list_recent_runs(Path(effective_cfg.HISTORY_DB), limit=150)
     return render_template("history.html", rows=rows)
+
+
+@app.get("/logs/<path:filename>")
+def view_log(filename):
+    effective_cfg = settings_store.build_effective_config(base_config)
+    logs_dir = Path(effective_cfg.LOGS_DIR).resolve()
+    target = (logs_dir / filename).resolve()
+    # Chan doc file ngoai LOGS_DIR (vd truyen "../../config.py" qua filename).
+    if logs_dir not in target.parents and target != logs_dir:
+        abort(403)
+    if not target.exists() or not target.is_file():
+        abort(404)
+    content = target.read_text(encoding="utf-8", errors="replace")
+    return render_template("log_view.html", filename=filename, content=content)
 
 
 @app.route("/excel")
@@ -171,6 +218,7 @@ def excel_page():
         error=error,
         excel_file=str(effective_cfg.EXCEL_FILE),
         row_count=len(rows),
+        column_widths=excel_log.COLUMN_WIDTHS,
     )
 
 
@@ -186,33 +234,41 @@ def excel_download():
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
     if request.method == "POST":
-        overrides = {"common": {}, "tasks": {}}
-
-        overrides["common"]["stop_when_duplicate_found"] = request.form.get("stop_when_duplicate_found") == "on"
-        overrides["common"]["duplicate_check_mode"] = request.form.get(
-            "duplicate_check_mode", base_config.DUPLICATE_CHECK_MODE
-        )
+        common_updates = {
+            "STOP_WHEN_DUPLICATE_FOUND": request.form.get("stop_when_duplicate_found") == "on",
+            "DUPLICATE_CHECK_MODE": request.form.get("duplicate_check_mode", base_config.DUPLICATE_CHECK_MODE),
+        }
         try:
-            overrides["common"]["slow_mo_ms"] = int(request.form.get("slow_mo_ms", base_config.SLOW_MO_MS))
+            common_updates["SLOW_MO_MS"] = int(request.form.get("slow_mo_ms", base_config.SLOW_MO_MS))
         except (TypeError, ValueError):
-            overrides["common"]["slow_mo_ms"] = base_config.SLOW_MO_MS
+            common_updates["SLOW_MO_MS"] = base_config.SLOW_MO_MS
 
-        for key, base_task in base_config.TASKS.items():
-            try:
-                max_docs = int(request.form.get(f"{key}_max_documents") or base_task.max_documents)
-            except (TypeError, ValueError):
-                max_docs = base_task.max_documents
+        error = None
+        try:
+            settings_store.update_common_fields(common_updates)
+            for key, base_task in base_config.TASKS.items():
+                try:
+                    max_docs = int(request.form.get(f"{key}_max_documents") or base_task.max_documents)
+                except (TypeError, ValueError):
+                    max_docs = base_task.max_documents
 
-            overrides["tasks"][key] = {
-                "enabled": request.form.get(f"{key}_enabled") == "on",
-                "role_pattern": request.form.get(f"{key}_role_pattern", base_task.role_pattern).strip(),
-                "max_documents": max_docs,
-                "enable_finish": request.form.get(f"{key}_enable_finish") == "on",
-                "enable_download_pdf": request.form.get(f"{key}_enable_download_pdf") == "on",
-                "ask_confirm_before_finish": request.form.get(f"{key}_ask_confirm_before_finish") == "on",
-            }
+                settings_store.update_task_fields(
+                    key,
+                    {
+                        "enabled": request.form.get(f"{key}_enabled") == "on",
+                        "role_pattern": request.form.get(f"{key}_role_pattern", base_task.role_pattern).strip(),
+                        "max_documents": max_docs,
+                        "enable_finish": request.form.get(f"{key}_enable_finish") == "on",
+                        "enable_download_pdf": request.form.get(f"{key}_enable_download_pdf") == "on",
+                        "ask_confirm_before_finish": request.form.get(f"{key}_ask_confirm_before_finish") == "on",
+                    },
+                )
+            settings_store.reload_config(base_config)
+        except Exception as e:
+            error = str(e)
 
-        settings_store.save_overrides(overrides)
+        if error:
+            return redirect(url_for("settings_page", error=error))
         return redirect(url_for("settings_page", saved=1))
 
     effective_cfg = settings_store.build_effective_config(base_config)
@@ -223,7 +279,26 @@ def settings_page():
         "SLOW_MO_MS": effective_cfg.SLOW_MO_MS,
     }
     saved = request.args.get("saved") == "1"
-    return render_template("settings.html", tasks=tasks, common=common, saved=saved)
+    error = request.args.get("error")
+    return render_template("settings.html", tasks=tasks, common=common, saved=saved, error=error)
+
+
+@app.route("/scheduler", methods=["GET", "POST"])
+def scheduler_page():
+    if request.method == "POST":
+        t1 = request.form.get("time1", "").strip()
+        t2 = request.form.get("time2", "").strip()
+        times = [t for t in (t1, t2) if t]
+
+        if not times:
+            ok, message = scheduler_mod.remove_schedule()
+        else:
+            ok, message = scheduler_mod.apply_schedule(PROJECT_DIR, times)
+
+        return render_template("scheduler.html", times=times, saved=True, ok=ok, message=message)
+
+    current_times = scheduler_mod.get_current_times()
+    return render_template("scheduler.html", times=current_times, saved=False, ok=None, message="")
 
 
 if __name__ == "__main__":

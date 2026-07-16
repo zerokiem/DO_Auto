@@ -40,6 +40,24 @@ TITLE_ROW = 1
 HEADER_ROW = 2
 DATA_START_ROW = 3
 
+# Do rong cot (don vi "ky tu" - dung ca cho Excel column width lan cho web, xem
+# webapp/app.py excel_page() va webapp/templates/excel_view.html). La NGUON DUY
+# NHAT cho do rong cot, tranh viet 2 lan 2 noi roi bi lech nhau.
+COLUMN_WIDTHS = dict(
+    zip(
+        HEADERS,
+        [6, 18, 13, 30, 50, 18, 20, 30, 16, 30, 35, 45, 20],
+    )
+)
+
+# Ten sheet kieu cu (truoc khi doi sang tieng Viet co dau) - de tu dong doi ten
+# sheet cu thanh ten moi thay vi tao sheet rong moi lam "mo côi" du lieu cu.
+LEGACY_SHEET_NAMES = {
+    "Chủ trì": ["Chu_tri"],
+    "Phối hợp": ["Phoi_hop"],
+    "Đảng - Đoàn": ["Dang_doan"],
+}
+
 # Cot theo chi so 0-based trong openpyxl values_only iterator (0 = STT).
 COL_SO_VB = 1
 COL_NGAY_VB = 2
@@ -84,7 +102,7 @@ def apply_excel_layout(ws, title_text: str) -> None:
         cell.border = border
     ws.row_dimensions[HEADER_ROW].height = 35
 
-    widths = {1: 6, 2: 18, 3: 13, 4: 30, 5: 50, 6: 18, 7: 20, 8: 30, 9: 16, 10: 30, 11: 35, 12: 45, 13: 20}
+    widths = {i: COLUMN_WIDTHS[header] for i, header in enumerate(HEADERS, start=1)}
     for col_idx, width in widths.items():
         ws.column_dimensions[get_column_letter(col_idx)].width = width
 
@@ -103,6 +121,13 @@ def apply_excel_layout(ws, title_text: str) -> None:
 def _get_or_create_sheet(wb, sheet_name: str):
     if sheet_name in wb.sheetnames:
         return wb[sheet_name]
+    # Ten sheet vua doi sang tieng Viet co dau (vd "Chu_tri" -> "Chủ trì")? Doi
+    # ten sheet cu thay vi tao sheet moi rong, de khong "mo côi" du lieu da co.
+    for legacy_name in LEGACY_SHEET_NAMES.get(sheet_name, []):
+        if legacy_name in wb.sheetnames:
+            ws = wb[legacy_name]
+            ws.title = sheet_name
+            return ws
     # Neu workbook chi co dung 1 sheet mac dinh trong ("Sheet") thi doi ten sheet do
     # thay vi tao them sheet rong thua.
     if wb.sheetnames == ["Sheet"] and wb["Sheet"].max_row <= 1:

@@ -37,6 +37,10 @@ EXCEL_FILE = DOWNLOAD_BASE_DIR / "Tong_hop_DOffice.xlsx"
 # Tu tao khi chay lan dau, khong can tao truoc.
 HISTORY_DB = DOWNLOAD_BASE_DIR / "doffice_auto_history.sqlite3"
 
+# Thu muc luu file log DAY DU cua TUNG LAN CHAY (moi lan chay run_doffice.py hoac
+# tu web deu tu tao 1 file .log o day, khong chi rieng luc chay bang Scheduled Task).
+LOGS_DIR = DOWNLOAD_BASE_DIR / "logs"
+
 # Khoa kiem tra trung, dung chung cho ca 3 tac vu:
 # - "so_vb_ngay_vb": So VB + Ngay VB. Khuyen nghi dung mac dinh.
 # - "so_vb": chi dung So VB. Chi dung khi chac chan So VB khong lap.
@@ -100,7 +104,7 @@ TASKS = {
         max_documents=20,
         enable_download_pdf=True,
         download_subdir="VB_Chu_tri_da_XL",
-        sheet_name="Chu_tri",
+        sheet_name="Chủ trì",
         title_text="TỔNG HỢP CÁC VĂN BẢN CHỦ TRÌ ĐÃ XỬ LÝ",
         sheet_order=1,
         debug_prefix="chu_tri_da_xl",
@@ -121,7 +125,7 @@ TASKS = {
         max_documents=50,
         enable_download_pdf=True,
         download_subdir="VB_Phoi_hop",
-        sheet_name="Phoi_hop",
+        sheet_name="Phối hợp",
         title_text="TỔNG HỢP CÁC VĂN BẢN PHỐI HỢP",
         sheet_order=2,
         debug_prefix="vb_phoi_hop",
@@ -142,7 +146,7 @@ TASKS = {
         max_documents=50,
         enable_download_pdf=True,
         download_subdir="VB_Dang_doan_phoi_hop",
-        sheet_name="Dang_doan",
+        sheet_name="Đảng - Đoàn",
         title_text="TỔNG HỢP CÁC VĂN BẢN ĐẢNG, CÔNG ĐOÀN ĐÃ XỬ LÝ",
         sheet_order=3,
         debug_prefix="dang_doan_phoi_hop",

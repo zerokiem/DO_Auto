@@ -1,15 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Cài đặt - DOffice Auto{% endblock %}
+{% block title %}Cài đặt - DOffice{% endblock %}
 
 {% block content %}
 <section class="panel">
   <div class="panel-head">
     <h1>Cài đặt</h1>
-    <p>Áp dụng cho cả web dashboard lẫn khi chạy bằng CLI/PowerShell. Lưu vào <code>user_settings.json</code>, không đụng đến <code>config.py</code>.</p>
+    <p>Lưu sẽ ghi <strong>trực tiếp vào <code>config.py</code></strong> (giữ nguyên mọi chú thích/định dạng khác trong file) &ndash; sửa ở đây hay mở <code>config.py</code> sửa tay đều là cùng 1 nguồn, không có lớp đè riêng nào khác. Áp dụng ngay cho cả web dashboard lẫn khi chạy bằng CLI/PowerShell/Task Scheduler.</p>
   </div>
 
-  {% if saved %}
-  <div class="banner banner-success">Đã lưu cài đặt.</div>
+  {% if saved and not error %}
+  <div class="banner banner-success">Đã lưu cài đặt vào config.py.</div>
+  {% elif error %}
+  <div class="banner banner-danger">Không lưu được: {{ error }}</div>
   {% endif %}
 
   <form method="post" class="settings-form">

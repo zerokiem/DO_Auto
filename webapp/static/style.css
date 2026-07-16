@@ -1,4 +1,4 @@
-/* DOffice Auto - bang dieu khien noi bo.
+/* DOffice - bang dieu khien noi bo.
    Bang mau lay tu chinh mau header/tieu de trong file Excel tong hop (#1F4E78
    xanh navy, #D9EAF7 xanh nhat) de dashboard va Excel dau ra co cung 1 "nhan
    dien" thi giac, thay vi mot bang mau chung chung. O console nhat ky chay -
@@ -244,11 +244,40 @@ code {
 .console::-webkit-scrollbar { width: 9px; }
 .console::-webkit-scrollbar-thumb { background: var(--terminal-border); border-radius: 5px; }
 
+.console-static {
+  max-height: none;
+  white-space: pre-wrap;
+}
+
+/* ---------- Login panel ---------- */
+
+.login-status {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--pale-blue);
+  border: 1px solid var(--pale-blue-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.login-status p { margin: 0; font-size: 13.5px; color: var(--navy-deep); flex: 1 1 260px; }
+
+.text-muted { color: var(--text-muted); }
+
 /* ---------- Tables ---------- */
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
 
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table.excel-table { table-layout: fixed; min-width: 100%; }
+.data-table.excel-table td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 .data-table th {
   background: var(--navy);
   color: #fff;

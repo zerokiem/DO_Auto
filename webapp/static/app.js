@@ -1,4 +1,4 @@
-// DOffice Auto dashboard - kich hoat chay tac vu, xem nhat ky truc tiep qua
+// DOffice dashboard - kich hoat chay tac vu, xem nhat ky truc tiep qua
 // Server-Sent Events, theo doi trang thai dinh ky cho toi khi chay xong.
 
 (function () {
@@ -132,10 +132,90 @@
     pollStatus();
   }
 
+  // ---------- Dang nhap lai ----------
+
+  function setLoginBoxVisible(visible, message) {
+    const box = document.getElementById("login-status-box");
+    const msgEl = document.getElementById("login-status-message");
+    if (!box) return;
+    box.hidden = !visible;
+    if (msgEl && message) msgEl.textContent = message;
+  }
+
+  function setLoginStartButtonBusy(busy) {
+    const btn = document.getElementById("login-start-btn");
+    if (btn) btn.disabled = busy;
+  }
+
+  async function pollLoginStatus() {
+    let data;
+    try {
+      const res = await fetch("/api/login/status");
+      data = await res.json();
+    } catch (e) {
+      setTimeout(pollLoginStatus, 3000);
+      return;
+    }
+
+    if (data.is_active) {
+      setLoginBoxVisible(true, data.message);
+      setLoginStartButtonBusy(true);
+      setTimeout(pollLoginStatus, 2000);
+      return;
+    }
+
+    setLoginStartButtonBusy(false);
+    if (data.message) {
+      setLoginBoxVisible(true, data.message);
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      setLoginBoxVisible(false, "");
+    }
+  }
+
+  async function startLogin() {
+    setLoginStartButtonBusy(true);
+    let res, data;
+    try {
+      res = await fetch("/api/login/start", { method: "POST" });
+      data = await res.json();
+    } catch (e) {
+      setLoginStartButtonBusy(false);
+      return;
+    }
+    if (!data.started) {
+      setLoginStartButtonBusy(false);
+      alert(data.error || "Không mở được cửa sổ đăng nhập.");
+      return;
+    }
+    setLoginBoxVisible(true, "Đang mở cửa sổ đăng nhập trên máy chủ...");
+    pollLoginStatus();
+  }
+
+  async function confirmLogin() {
+    const btn = document.getElementById("login-confirm-btn");
+    if (btn) btn.disabled = true;
+    try {
+      await fetch("/api/login/confirm", { method: "POST" });
+    } catch (e) {
+      // bo qua, pollLoginStatus se tiep tuc cap nhat trang thai
+    }
+    if (btn) btn.disabled = false;
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const runBtn = document.getElementById("run-btn");
     if (runBtn) {
       runBtn.addEventListener("click", startRun);
+    }
+
+    const loginStartBtn = document.getElementById("login-start-btn");
+    if (loginStartBtn) {
+      loginStartBtn.addEventListener("click", startLogin);
+    }
+    const loginConfirmBtn = document.getElementById("login-confirm-btn");
+    if (loginConfirmBtn) {
+      loginConfirmBtn.addEventListener("click", confirmLogin);
     }
 
     // Neu mo lai trang trong luc dang co 1 lan chay dien ra (vd nguoi dung
@@ -146,6 +226,14 @@
       openConsole();
       connectLogStream();
       pollStatus();
+    }
+
+    // Tuong tu, neu dang co 1 luot dang nhap dang cho xac nhan.
+    const initialLogin = window.__INITIAL_LOGIN_STATUS__;
+    if (initialLogin && initialLogin.is_active) {
+      setLoginBoxVisible(true, initialLogin.message);
+      setLoginStartButtonBusy(true);
+      pollLoginStatus();
     }
   });
 })();

@@ -5,9 +5,9 @@ Chon 1, 2 hoac ca 3 tac vu de chay (Van ban Chu tri - Da xu ly / Van ban Phoi ho
 - Cho xu ly / Cong viec Dang-Doan Phoi hop - Cho thuc hien). Chi mo/dang nhap
 trinh duyet 1 lan cho du chay bao nhieu tac vu.
 
-Doc cau hinh tu config.py, hoa cung moi chinh sua da luu qua trang web "Cai dat"
-(user_settings.json, xem do_auto/settings_store.py) - sua o 1 trong 2 noi (web
-hoac config.py) deu ap dung cho ca CLI lan web dashboard.
+Doc cau hinh truc tiep tu config.py - sua tay file nay hay sua qua trang web
+"Cai dat" deu la CUNG 1 file, khong bi lech giua CLI va web (xem
+do_auto/settings_store.py).
 
 CACH DUNG
 ---------
@@ -37,7 +37,7 @@ from do_auto.runner import run_selected_tasks
 
 
 def list_tasks(effective_cfg) -> None:
-    print("Các tác vụ hiện có (đã áp dụng user_settings.json nếu có):\n")
+    print("Các tác vụ hiện có:\n")
     for key, task in sorted(effective_cfg.TASKS.items(), key=lambda kv: kv[1].sheet_order):
         state = "bật" if task.enabled else "TẮT"
         print(f"  {key:<10} - {task.label}  [{state}]")
@@ -103,6 +103,13 @@ def main() -> None:
     parser.add_argument("--list", action="store_true", help="Liệt kê tác vụ hiện có rồi thoát")
     parser.add_argument("--test", action="store_true", help="Chế độ test an toàn (xem config.TEST_MODE_OVERRIDES)")
     parser.add_argument("--no-pause", action="store_true", help="Ép PAUSE_BEFORE_CLOSE=False (đóng browser ngay khi xong)")
+    parser.add_argument(
+        "--source",
+        type=str,
+        default="cli",
+        choices=["cli", "scheduler"],
+        help="Ghi vào lịch sử chạy: 'cli' (chạy tay, mặc định) hay 'scheduler' (Task Scheduler/run_all_doffice.ps1)",
+    )
     args = parser.parse_args()
 
     effective_cfg = settings_store.build_effective_config(config)
@@ -135,7 +142,7 @@ def main() -> None:
     print("AUTH_STATE:", effective_cfg.AUTH_STATE)
     print()
 
-    run_selected_tasks(task_keys, effective_cfg, headless=False, trigger_source="cli")
+    run_selected_tasks(task_keys, effective_cfg, headless=False, trigger_source=args.source)
 
 
 if __name__ == "__main__":

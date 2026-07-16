@@ -1,5 +1,5 @@
 """
-Khoi dong web dashboard cho DOffice Auto.
+Khoi dong web dashboard cho DOffice.
 
 CACH DUNG
 ---------
@@ -44,5 +44,5 @@ def _open_browser_later() -> None:
 
 if __name__ == "__main__":
     threading.Thread(target=_open_browser_later, daemon=True).start()
-    print(f"DOffice Auto web dashboard: http://{HOST}:{PORT}   (Ctrl+C để dừng)")
+    print(f"DOffice web dashboard: http://{HOST}:{PORT}   (Ctrl+C để dừng)")
     app.run(host=HOST, port=PORT, threaded=True, debug=False)

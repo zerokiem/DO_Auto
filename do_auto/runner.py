@@ -10,9 +10,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
+import sys
+
 from playwright.sync_api import sync_playwright
 
-from . import browser_nav, excel_log, extract, finish_doc, history, pdf_download, text_utils
+from . import browser_nav, excel_log, extract, finish_doc, history, log_capture, pdf_download, text_utils
 from .task_types import TaskConfig
 
 
@@ -189,8 +191,13 @@ def run_selected_tasks(
         True = chay an, khong hien cua so - phu hop khi kich hoat tu xa qua web
         dashboard (vd tu dien thoai qua Tailscale), vi luc do khong ai ngoi xem
         cua so Chromium tren may chay server ca.
-    trigger_source: chi de ghi vao lich su (HISTORY_DB) cho biet lan chay nay
-        bat nguon tu "cli" hay "web".
+    trigger_source: ghi vao lich su (HISTORY_DB) cho biet lan chay nay bat nguon
+        tu "cli" (chay tay), "scheduler" (Task Scheduler/run_all_doffice.ps1),
+        hay "web".
+
+    MOI LAN GOI HAM NAY (bat ke tu dau) deu tu tao 1 file log rieng trong
+    cfg.LOGS_DIR, khong chi rieng khi chay qua Scheduled Task - xem
+    do_auto/log_capture.py.
     """
     if not Path(cfg.AUTH_STATE).exists():
         raise FileNotFoundError(
@@ -198,58 +205,77 @@ def run_selected_tasks(
             "Chạy: python login_save_state.py   để lưu phiên đăng nhập trước."
         )
 
-    excel_log.ensure_all_sheets(cfg.EXCEL_FILE, cfg.TASKS)
+    logs_dir = Path(cfg.LOGS_DIR)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{trigger_source}.log"
+    log_path = logs_dir / log_filename
 
-    results: List[TaskResult] = []
+    original_stdout = sys.stdout
+    log_handle = open(log_path, "a", encoding="utf-8")
+    sys.stdout = log_capture.FileTeeStream(original_stdout, log_handle)
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless, slow_mo=cfg.SLOW_MO_MS)
-        context = browser.new_context(
-            storage_state=str(cfg.AUTH_STATE),
-            accept_downloads=True,
-            viewport={"width": 1600, "height": 900},
-        )
-        page = context.new_page()
+    try:
+        print(f"=== DOffice Auto | nguồn: {trigger_source} | tác vụ: {', '.join(task_keys)} ===")
+        print(f"=== Bắt đầu: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n")
 
-        try:
-            for key in task_keys:
-                task = cfg.TASKS.get(key)
-                if task is None:
-                    print(f"⚠️ Không tìm thấy tác vụ '{key}' trong config.TASKS, bỏ qua.")
-                    continue
-                if not task.enabled:
-                    print(f"⏸️ Tác vụ '{task.label}' đang enabled=False trong config.py, bỏ qua.")
-                    continue
+        excel_log.ensure_all_sheets(cfg.EXCEL_FILE, cfg.TASKS)
 
-                started_at = datetime.now()
-                try:
-                    result = run_task(page, task, cfg)
-                except Exception as e:
-                    print(f"❌ Lỗi không mong muốn khi chạy tác vụ {task.label}: {e}")
-                    text_utils.save_debug(page, task.debug_prefix, "unexpected_error")
-                    result = TaskResult(task.key, task.label, ok=False, processed=0, note=str(e))
-                finished_at = datetime.now()
+        results: List[TaskResult] = []
 
-                try:
-                    history.record_run(
-                        Path(cfg.HISTORY_DB),
-                        task_key=result.key,
-                        task_label=result.label,
-                        started_at=started_at.strftime("%Y-%m-%d %H:%M:%S"),
-                        finished_at=finished_at.strftime("%Y-%m-%d %H:%M:%S"),
-                        processed=result.processed,
-                        ok=result.ok,
-                        note=result.note,
-                        trigger_source=trigger_source,
-                    )
-                except Exception as e:
-                    print(f"⚠️ Không ghi được lịch sử chạy: {e}")
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=headless, slow_mo=cfg.SLOW_MO_MS)
+            context = browser.new_context(
+                storage_state=str(cfg.AUTH_STATE),
+                accept_downloads=True,
+                viewport={"width": 1600, "height": 900},
+            )
+            page = context.new_page()
 
-                results.append(result)
-        finally:
-            if cfg.PAUSE_BEFORE_CLOSE:
-                input("\nNhấn Enter để đóng browser...")
-            browser.close()
+            try:
+                for key in task_keys:
+                    task = cfg.TASKS.get(key)
+                    if task is None:
+                        print(f"⚠️ Không tìm thấy tác vụ '{key}' trong config.TASKS, bỏ qua.")
+                        continue
+                    if not task.enabled:
+                        print(f"⏸️ Tác vụ '{task.label}' đang enabled=False trong config.py, bỏ qua.")
+                        continue
 
-    print_summary(results)
-    return results
+                    started_at = datetime.now()
+                    try:
+                        result = run_task(page, task, cfg)
+                    except Exception as e:
+                        print(f"❌ Lỗi không mong muốn khi chạy tác vụ {task.label}: {e}")
+                        text_utils.save_debug(page, task.debug_prefix, "unexpected_error")
+                        result = TaskResult(task.key, task.label, ok=False, processed=0, note=str(e))
+                    finished_at = datetime.now()
+
+                    try:
+                        history.record_run(
+                            Path(cfg.HISTORY_DB),
+                            task_key=result.key,
+                            task_label=result.label,
+                            started_at=started_at.strftime("%Y-%m-%d %H:%M:%S"),
+                            finished_at=finished_at.strftime("%Y-%m-%d %H:%M:%S"),
+                            processed=result.processed,
+                            ok=result.ok,
+                            note=result.note,
+                            trigger_source=trigger_source,
+                            log_file=log_filename,
+                        )
+                    except Exception as e:
+                        print(f"⚠️ Không ghi được lịch sử chạy: {e}")
+
+                    results.append(result)
+            finally:
+                if cfg.PAUSE_BEFORE_CLOSE:
+                    input("\nNhấn Enter để đóng browser...")
+                browser.close()
+
+        print_summary(results)
+        print(f"\n=== Kết thúc: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
+        print(f"=== File log này: {log_path} ===")
+        return results
+    finally:
+        sys.stdout = original_stdout
+        log_handle.close()

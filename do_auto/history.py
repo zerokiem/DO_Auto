@@ -26,10 +26,17 @@ def _connect(db_path: Path) -> sqlite3.Connection:
             processed INTEGER NOT NULL DEFAULT 0,
             ok INTEGER NOT NULL DEFAULT 0,
             note TEXT DEFAULT '',
-            trigger_source TEXT DEFAULT 'cli'
+            trigger_source TEXT DEFAULT 'cli',
+            log_file TEXT DEFAULT ''
         )
         """
     )
+    # Nang cap an toan cho database da tao truoc khi co cot log_file (them ALTER
+    # TABLE neu thieu cot, bo qua loi neu cot da co san).
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN log_file TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
@@ -43,6 +50,7 @@ def record_run(
     ok: bool,
     note: str = "",
     trigger_source: str = "cli",
+    log_file: str = "",
 ) -> None:
     conn = _connect(db_path)
     try:
@@ -50,10 +58,10 @@ def record_run(
             conn.execute(
                 """
                 INSERT INTO runs
-                    (task_key, task_label, started_at, finished_at, processed, ok, note, trigger_source)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (task_key, task_label, started_at, finished_at, processed, ok, note, trigger_source, log_file)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (task_key, task_label, started_at, finished_at, processed, int(ok), note, trigger_source),
+                (task_key, task_label, started_at, finished_at, processed, int(ok), note, trigger_source, log_file),
             )
     finally:
         conn.close()
@@ -69,6 +77,7 @@ _COLUMNS = [
     "ok",
     "note",
     "trigger_source",
+    "log_file",
 ]
 
 
