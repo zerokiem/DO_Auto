@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Excel - DOffice Auto{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h1>Xem file Excel tổng hợp</h1>
+      <p>{{ excel_file }}</p>
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('excel_download') }}">Tải file Excel</a>
+  </div>
+
+  <div class="tabs">
+    {% for name in sheet_names %}
+    <a class="tab {{ 'tab-active' if name == active_sheet else '' }}" href="{{ url_for('excel_page', sheet=name) }}">{{ name }}</a>
+    {% endfor %}
+  </div>
+
+  {% if error %}
+  <div class="banner banner-danger">Không đọc được file Excel: {{ error }}</div>
+  {% elif not rows %}
+  <div class="empty-state">Sheet "{{ active_sheet }}" chưa có dữ liệu. Chạy tác vụ tương ứng để bắt đầu ghi dữ liệu.</div>
+  {% else %}
+  <input type="text" id="excel-search" class="search-box" placeholder="Lọc theo Số VB, trích yếu, nơi phát hành...">
+  <p class="hint">Hiện {{ row_count }} dòng gần nhất (mới nhất ở trên). Tải file Excel để xem đầy đủ.</p>
+  <div class="table-wrap">
+    <table class="data-table" id="excel-table">
+      <thead>
+        <tr>
+          {% for col in columns %}
+          {% if col != "Thời gian chỉ đạo" %}<th>{{ col }}</th>{% endif %}
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          {% for col, val in zip(columns, row) %}
+          {% if col != "Thời gian chỉ đạo" %}<td>{{ val if val is not none else "" }}</td>{% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const searchBox = document.getElementById('excel-search');
+  if (searchBox) {
+    searchBox.addEventListener('input', () => {
+      const term = searchBox.value.trim().toLowerCase();
+      const rows = document.querySelectorAll('#excel-table tbody tr');
+      rows.forEach((row) => {
+        row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+      });
+    });
+  }
+</script>
+{% endblock %}

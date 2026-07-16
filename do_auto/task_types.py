@@ -1,0 +1,64 @@
+"""
+Dinh nghia cau truc mot "tac vu" DOffice (VD: Van ban Chu tri, Van ban Phoi hop,
+Cong viec Dang doan Phoi hop...).
+
+Moi tac vu la 1 TaskConfig. File config.py se khai bao cac TaskConfig cu the trong
+dict TASKS - do la noi duy nhat can chinh khi:
+- doi vai tro (role) tren DOffice cua tung tac vu,
+- doi so luong van ban toi da,
+- bat/tat tac vu khoi lan chay "--all",
+- doi ten sheet/tieu de Excel...
+
+Khong can dong vao code logic trong cac module khac.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
+class TaskConfig:
+    # --- Dinh danh ---
+    key: str  # khoa noi bo, dung trong --tasks va trong dict TASKS, vd "chu_tri"
+    label: str  # ten hien thi tieng Viet, vd "Van ban Chu tri - Da xu ly"
+    enabled: bool = True  # co nam trong lua chon "Tat ca" / menu mac dinh khong
+
+    # --- Chon dung chuc danh (role) tren DOffice ---
+    # De trong "" neu tai khoan chi co 1 vai tro, khong can doi.
+    # Co the dung nguyen van ten hien thi trong menu, vi du:
+    #   "Pho Truyen tai dien", "Truong Truyen tai dien", "Chi bo 1", "Ky thuat"...
+    # Gia tri nay duoc dung truc tiep nhu 1 regex (khong phan biet hoa/thuong),
+    # nen ky tu dac biet cua regex (. * ? ( ) ...) se co nghia dac biet neu co.
+    role_pattern: str = ""
+
+    # --- Dieu huong menu DOffice ---
+    sidebar_item: str = "Văn bản"  # "Văn bản" hoặc "Công việc"
+    list_link: str = "Chờ xử lý"  # "Chờ xử lý" | "Đã xử lý" | "Chờ thực hiện"
+    tab_name: Optional[str] = None  # "Chủ trì" | "Phối hợp" | None neu la tab mac dinh
+
+    # --- Hanh vi xu ly van ban ---
+    # Co bam "Ket thuc nhanh" + "Luu" sau khi tai PDF khong.
+    # Danh sach "Da xu ly" (chu_tri) khong can vi van ban da xong roi.
+    enable_finish: bool = True
+    ask_confirm_before_finish: bool = False
+    # Sau khi Ket thuc, DOffice thuong tu day van ban ke tiep len dong dau -> chon lai dong 0.
+    always_pick_first_row_after_finish: bool = True
+    # True: uu tien click icon co (chi co o danh sach "Chu tri - Da xu ly").
+    prefer_flag_icon: bool = False
+    # True (chu_tri): trich thong tin + kiem tra trung TRUOC khi mo van ban (tiet kiem thoi
+    #   gian vi van ban da xu ly roi, khong can mo neu da co trong Excel).
+    # False (phoi_hop, dang_doan): phai mo van ban ra thi thong tin chi dao moi hien du,
+    #   nen mo truoc roi moi trich + kiem tra trung.
+    check_duplicate_before_open: bool = False
+
+    # --- Gioi han & tai PDF ---
+    max_documents: int = 30
+    enable_download_pdf: bool = True
+
+    # --- Noi luu ---
+    download_subdir: str = "VB_Khac"  # thu muc con duoi DOWNLOAD_BASE_DIR
+    sheet_name: str = "Sheet"  # ten sheet trong file Excel gop
+    title_text: str = "TỔNG HỢP VĂN BẢN"  # tieu de lon o dong 1 cua sheet
+    sheet_order: int = 99  # thu tu sheet trong workbook (1, 2, 3...)
+    debug_prefix: str = "doffice"  # tien to ten file anh debug khi loi

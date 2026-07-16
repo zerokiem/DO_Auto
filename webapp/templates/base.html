@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}DOffice Auto{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">DO</span>
+      <div class="brand-text">
+        <strong>DOffice Auto</strong>
+        <span>Bảng điều khiển nội bộ</span>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Bảng điều khiển</a>
+      <a href="{{ url_for('history_page') }}" class="{{ 'active' if request.endpoint == 'history_page' else '' }}">Lịch sử</a>
+      <a href="{{ url_for('excel_page') }}" class="{{ 'active' if request.endpoint == 'excel_page' else '' }}">Excel</a>
+      <a href="{{ url_for('settings_page') }}" class="{{ 'active' if request.endpoint == 'settings_page' else '' }}">Cài đặt</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="foot">
+    Chạy cục bộ trên máy này &middot; không có xác thực đăng nhập riêng &middot; chỉ dùng trong mạng nội bộ/Tailscale tin cậy
+  </footer>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

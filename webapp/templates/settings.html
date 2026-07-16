@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Cài đặt - DOffice Auto{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-head">
+    <h1>Cài đặt</h1>
+    <p>Áp dụng cho cả web dashboard lẫn khi chạy bằng CLI/PowerShell. Lưu vào <code>user_settings.json</code>, không đụng đến <code>config.py</code>.</p>
+  </div>
+
+  {% if saved %}
+  <div class="banner banner-success">Đã lưu cài đặt.</div>
+  {% endif %}
+
+  <form method="post" class="settings-form">
+    <h2 class="section-title">Chung</h2>
+    <div class="field-row">
+      <label class="switch">
+        <input type="checkbox" name="stop_when_duplicate_found" {{ 'checked' if common.STOP_WHEN_DUPLICATE_FOUND else '' }}>
+        <span>Dừng khi gặp văn bản đã có trong Excel</span>
+      </label>
+    </div>
+    <div class="field-row">
+      <label for="duplicate_check_mode">Khoá kiểm tra trùng</label>
+      <select name="duplicate_check_mode" id="duplicate_check_mode">
+        <option value="so_vb_ngay_vb" {{ 'selected' if common.DUPLICATE_CHECK_MODE == 'so_vb_ngay_vb' else '' }}>Số VB + Ngày VB (khuyến nghị)</option>
+        <option value="so_vb" {{ 'selected' if common.DUPLICATE_CHECK_MODE == 'so_vb' else '' }}>Chỉ Số VB</option>
+        <option value="so_vb_time" {{ 'selected' if common.DUPLICATE_CHECK_MODE == 'so_vb_time' else '' }}>Số VB + Thời gian chỉ đạo</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label for="slow_mo_ms">Tốc độ thao tác trình duyệt (mili giây, 0 = nhanh nhất)</label>
+      <input type="number" min="0" step="50" name="slow_mo_ms" id="slow_mo_ms" value="{{ common.SLOW_MO_MS }}">
+    </div>
+
+    <hr class="divider">
+
+    {% for key, task in tasks %}
+    <h2 class="section-title">{{ task.label }}</h2>
+    <div class="field-row">
+      <label class="switch">
+        <input type="checkbox" name="{{ key }}_enabled" {{ 'checked' if task.enabled else '' }}>
+        <span>Bật tác vụ này (nằm trong lựa chọn "Tất cả")</span>
+      </label>
+    </div>
+    <div class="field-row">
+      <label for="{{ key }}_role_pattern">Vai trò (role) trên DOffice</label>
+      <input type="text" name="{{ key }}_role_pattern" id="{{ key }}_role_pattern" value="{{ task.role_pattern }}" placeholder="Để trống nếu tài khoản chỉ có 1 vai trò">
+      <p class="field-hint">Gõ đúng chữ hiển thị trong menu "...Phòng ban:" trên DOffice, ví dụ "Phó Truyền tải điện" hoặc "Chi bộ 1".</p>
+    </div>
+    <div class="field-row">
+      <label for="{{ key }}_max_documents">Số văn bản tối đa mỗi lần chạy</label>
+      <input type="number" min="1" step="1" name="{{ key }}_max_documents" id="{{ key }}_max_documents" value="{{ task.max_documents }}">
+    </div>
+    <div class="field-row">
+      <label class="switch">
+        <input type="checkbox" name="{{ key }}_enable_download_pdf" {{ 'checked' if task.enable_download_pdf else '' }}>
+        <span>Tải PDF về máy</span>
+      </label>
+    </div>
+    <div class="field-row">
+      <label class="switch">
+        <input type="checkbox" name="{{ key }}_enable_finish" {{ 'checked' if task.enable_finish else '' }}>
+        <span>Bấm "Kết thúc nhanh" + "Lưu" sau khi tải xong</span>
+      </label>
+    </div>
+    <div class="field-row">
+      <label class="switch">
+        <input type="checkbox" name="{{ key }}_ask_confirm_before_finish" {{ 'checked' if task.ask_confirm_before_finish else '' }}>
+        <span>Hỏi xác nhận trước khi Kết thúc/Lưu (chỉ có tác dụng khi chạy bằng CLI, web luôn tắt mục này)</span>
+      </label>
+    </div>
+    <hr class="divider">
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary">Lưu cài đặt</button>
+  </form>
+</section>
+{% endblock %}

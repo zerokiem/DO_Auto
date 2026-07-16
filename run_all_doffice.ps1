@@ -1,5 +1,6 @@
-# DOffice Auto sequential runner - ASCII version v4
-# Run 3 Python scripts one by one and prevent overlapping runs.
+# DOffice Auto - PowerShell runner (v5, unified project)
+# Goi python run_doffice.py --all thay vi chay 3 script rieng nhu ban cu.
+# Van giu co che chong chay chong (lock file) va ghi log.
 
 $ErrorActionPreference = "Stop"
 
@@ -7,14 +8,14 @@ $ErrorActionPreference = "Stop"
 $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
 
+# --- CHINH LAI 2 BIEN NAY CHO DUNG TREN MAY BAN ---
 $ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Auto"
 $PythonExe = Join-Path $ProjectDir ".venv\Scripts\python.exe"
 
-$Scripts = @(
-    "DO_phoi_hop.py",
-    "DO_chu_tri_da_XL_v3.py",
-    "DO_Dang_Doan_phoi_hop_v3.py"
-)
+# Tham so truyen cho run_doffice.py. Mac dinh chay ca 3 tac vu (--all).
+# Vi du chi chay 2 tac vu: "--tasks", "chu_tri,phoi_hop"
+# Them "--test" khi muon chay o che do test an toan.
+$RunnerArgs = @("--all", "--no-pause")
 
 $LogDir = Join-Path $ProjectDir "scheduler_logs"
 $LockFile = Join-Path $ProjectDir ".doffice_auto_running.lock"
@@ -50,9 +51,10 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 $Global:LogFile = Join-Path $LogDir ("doffice_run_" + (Get-Date).ToString("yyyyMMdd_HHmmss") + ".log")
 
 try {
-    Write-Log "Start DOffice Auto sequential run."
+    Write-Log "Start DOffice Auto (unified runner)."
     Write-Log "ProjectDir: $ProjectDir"
     Write-Log "PythonExe: $PythonExe"
+    Write-Log "Args: $($RunnerArgs -join ' ')"
 
     if (Test-Path $LockFile) {
         $lockAgeMinutes = ((Get-Date) - (Get-Item $LockFile).LastWriteTime).TotalMinutes
@@ -74,45 +76,38 @@ try {
 
     Set-Location $ProjectDir
 
-    foreach ($script in $Scripts) {
-        $scriptPath = Join-Path $ProjectDir $script
-        Write-Log "------------------------------"
-        Write-Log "Run script: $script"
-        Write-Log "ScriptPath: $scriptPath"
-
-        if (!(Test-Path $scriptPath)) {
-            throw "Script not found: $scriptPath"
-        }
-
-        $psi = New-Object System.Diagnostics.ProcessStartInfo
-        $psi.FileName = $PythonExe
-        $psi.Arguments = '"' + $scriptPath + '"'
-        $psi.WorkingDirectory = $ProjectDir
-        $psi.UseShellExecute = $false
-        $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
-        $psi.CreateNoWindow = $false
-
-        $p = New-Object System.Diagnostics.Process
-        $p.StartInfo = $psi
-        [void]$p.Start()
-        $stdout = $p.StandardOutput.ReadToEnd()
-        $stderr = $p.StandardError.ReadToEnd()
-        $p.WaitForExit()
-
-        Write-RawLog "STDOUT" $stdout
-        Write-RawLog "STDERR" $stderr
-
-        Write-Log "Finished script: $script | ExitCode=$($p.ExitCode)"
-
-        if ($p.ExitCode -ne 0) {
-            Write-Log "Script failed. Stop sequence to avoid mixed DOffice state."
-            Write-Log "Full log file: $Global:LogFile"
-            exit $p.ExitCode
-        }
+    $scriptPath = Join-Path $ProjectDir "run_doffice.py"
+    if (!(Test-Path $scriptPath)) {
+        throw "Script not found: $scriptPath"
     }
 
-    Write-Log "All scripts completed successfully."
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $PythonExe
+    $psi.Arguments = ('"' + $scriptPath + '" ' + ($RunnerArgs -join ' '))
+    $psi.WorkingDirectory = $ProjectDir
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.CreateNoWindow = $false
+
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
+    [void]$p.Start()
+    $stdout = $p.StandardOutput.ReadToEnd()
+    $stderr = $p.StandardError.ReadToEnd()
+    $p.WaitForExit()
+
+    Write-RawLog "STDOUT" $stdout
+    Write-RawLog "STDERR" $stderr
+
+    Write-Log "Finished run_doffice.py | ExitCode=$($p.ExitCode)"
+
+    if ($p.ExitCode -ne 0) {
+        Write-Log "Run failed. Full log file: $Global:LogFile"
+        exit $p.ExitCode
+    }
+
+    Write-Log "Run completed successfully."
     Write-Log "Full log file: $Global:LogFile"
 }
 catch {

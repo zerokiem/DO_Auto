@@ -1,0 +1,477 @@
+# DOffice Auto (bản gộp + web dashboard) – README
+
+Bộ công cụ tự động tải PDF, tổng hợp Excel và xử lý văn bản trên DOffice bằng
+Python + Playwright. Có 2 cách dùng: **CLI/PowerShell** (như trước) hoặc **bảng
+điều khiển web** chạy ngay trên máy bạn (mục 7).
+
+| Trước đây (3 file rời) | Bây giờ |
+|---|---|
+| `DO_chu_tri_da_XL_v3.py` | 1 trong 3 "tác vụ" (`chu_tri`) trong `config.py` |
+| `DO_phoi_hop.py` | tác vụ `phoi_hop` |
+| `DO_Dang_Doan_phoi_hop_v3.py` | tác vụ `dang_doan` |
+| 3 file Excel riêng | **1 file Excel `Tong_hop_DOffice.xlsx`, 3 sheet** |
+| Vai trò "Phó Truyền tải điện" hard-code trong code | Gõ vai trò trong `config.py` hoặc trang web **Cài đặt**, không đụng code |
+| Chạy `python DO_xxx.py` từng file | `python run_doffice.py` (menu/`--tasks`/`--all`) **hoặc** `python run_web.py` (bảng điều khiển web) |
+| Không có lịch sử chạy | Trang **Lịch sử** (SQLite), ghi cả lần chạy CLI lẫn web |
+| Xem kết quả phải tự mở Excel | Trang **Excel** xem trực tiếp trên web, có ô tìm kiếm |
+
+Những gì **không đổi**: cấu trúc cột Excel, cách đặt tên file PDF
+(`yymmdd-soVB - tên file.pdf`), cơ chế kiểm tra trùng, cơ chế kết thúc nhanh.
+Excel cũ và PDF cũ vẫn dùng bình thường; có script hỗ trợ gộp Excel cũ nếu muốn
+(mục 9).
+
+> Lưu ý an toàn: không gửi, không copy, không đưa lên GitHub file
+> `playwright/.auth/state.json` – đây là file lưu phiên đăng nhập DOffice.
+
+---
+
+## 0. Cấu trúc bộ file
+
+```text
+DO_Auto/
+│
+├─ config.py                          # NƠI DUY NHẤT CẦN CHỈNH khi đổi máy/đổi người dùng
+├─ run_doffice.py                     # Chạy chương trình bằng CLI/PowerShell
+├─ run_web.py                         # Chạy bảng điều khiển web (mục 7)
+├─ login_save_state.py                # Đăng nhập thủ công 1 lần, lưu phiên
+├─ migrate_old_excel.py               # (tuỳ chọn) gộp 3 file Excel cũ vào file mới
+├─ user_settings.json                 # Tự tạo khi lưu Cài đặt từ web, đè lên 1 phần config.py
+├─ requirements.txt
+├─ run_all_doffice.ps1                # Chạy tất cả tác vụ, dùng thủ công hoặc Task Scheduler
+├─ create_doffice_task_examples.ps1   # Tạo lịch chạy tự động (Task Scheduler)
+├─ README.md
+│
+├─ do_auto/                           # Package chứa logic dùng chung, thường KHÔNG cần đụng vào
+│  ├─ __init__.py
+│  ├─ task_types.py                   # Cấu trúc 1 "tác vụ" (TaskConfig)
+│  ├─ text_utils.py                   # Dọn text, đặt tên file, parse khối chỉ đạo
+│  ├─ excel_log.py                    # Ghi Excel gộp nhiều sheet
+│  ├─ browser_nav.py                  # Đăng nhập, chọn vai trò, điều hướng menu
+│  ├─ extract.py                      # Trích dữ liệu từ 1 dòng văn bản
+│  ├─ pdf_download.py                 # Tải PDF, đặt tên file
+│  ├─ finish_doc.py                   # Bấm "Kết thúc nhanh" + "Lưu"
+│  ├─ history.py                      # Ghi/đọc lịch sử chạy (SQLite) - CLI và web dùng chung
+│  ├─ settings_store.py               # Gộp config.py + user_settings.json thành cấu hình hiệu lực
+│  └─ runner.py                       # Vòng lặp xử lý + điều phối nhiều tác vụ
+│
+└─ webapp/                            # Bảng điều khiển web (Flask), xem mục 7
+   ├─ app.py                          # Route Flask: dashboard, chạy, lịch sử, Excel, cài đặt
+   ├─ run_manager.py                  # Chạy tác vụ nền + phát nhật ký trực tiếp cho trình duyệt
+   ├─ templates/                      # Giao diện HTML (Jinja)
+   └─ static/                        # CSS/JS
+```
+
+Bạn hầu như chỉ cần sửa **`config.py`** (hoặc dùng trang **Cài đặt** trên web,
+xem mục 7.5). Các file trong `do_auto/` là logic dùng chung, chỉ cần sửa nếu
+DOffice đổi giao diện (xem mục 12).
+
+---
+
+## 1. 3 tác vụ hiện có
+
+| Khoá (`--tasks`) | Tên hiển thị | Menu DOffice | Có bấm Kết thúc? |
+|---|---|---|---|
+| `chu_tri` | Văn bản Chủ trì – Đã xử lý | Văn bản → Đã xử lý → tab Chủ trì | Không (văn bản đã xong) |
+| `phoi_hop` | Văn bản Phối hợp – Chờ xử lý | Văn bản → Chờ xử lý → tab Phối hợp | Có |
+| `dang_doan` | Công việc Đảng/Đoàn/Công đoàn – Chờ thực hiện | Công việc → Chờ thực hiện → tab Phối hợp | Có |
+
+`chu_tri` có cấu trúc chọn văn bản khác 2 tác vụ kia (đúng như bạn ghi chú):
+danh sách "Đã xử lý" cho phép đọc đủ thông tin văn bản **ngay trên dòng danh
+sách**, nên chương trình kiểm tra trùng **trước khi** mở văn bản (đỡ tốn thời
+gian mở lại văn bản đã có trong Excel). Còn `phoi_hop`/`dang_doan` cần **mở văn
+bản ra trước** thì phần "chỉ đạo" mới hiển thị đủ để trích. Sự khác biệt này đã
+được đưa vào `config.py` qua cờ `check_duplicate_before_open`, không cần bạn tự
+xử lý.
+
+---
+
+## 2. Yêu cầu trước khi chạy
+
+- Windows 10/11.
+- Python 3.11 hoặc 3.12.
+- Quyền truy cập DOffice.
+- Trình duyệt Chromium do Playwright cài.
+
+Kiểm tra Python:
+
+```powershell
+python --version
+```
+
+## 3. Cài đặt môi trường lần đầu
+
+```powershell
+cd "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\Python\DO_Auto"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+playwright install chromium
+```
+
+`requirements.txt` giờ có thêm `flask` (chỉ dùng cho bảng điều khiển web, mục 7).
+
+## 4. Đăng nhập và lưu phiên DOffice lần đầu
+
+```powershell
+python login_save_state.py
+```
+
+Quy trình: Chromium mở ra → đăng nhập DOffice thủ công (chọn đúng tài
+khoản/chức danh nếu DOffice yêu cầu) → quay lại PowerShell, nhấn `Enter` →
+kiểm tra đã có file `playwright\.auth\state.json`.
+
+Nếu sau này DOffice báo hết phiên / tự quay về màn hình login, chạy lại bước
+này. Bước này **luôn phải làm bằng CLI** (cần 1 người ngồi đăng nhập thủ công
+trong cửa sổ Chromium thật) – không thể làm từ trang web.
+
+---
+
+## 5. Chỉnh `config.py` – việc quan trọng nhất khi dùng máy mới / người dùng khác
+
+Mở `config.py`, có 2 phần:
+
+### 5.1 Cấu hình chung (áp dụng mọi tác vụ)
+
+```python
+AUTH_STATE = Path("playwright/.auth/state.json")
+DOWNLOAD_BASE_DIR = Path(r"D:\OneDrive - NPT\9. Jobs\Van_ban")
+EXCEL_FILE = DOWNLOAD_BASE_DIR / "Tong_hop_DOffice.xlsx"
+HISTORY_DB = DOWNLOAD_BASE_DIR / "doffice_auto_history.sqlite3"
+DUPLICATE_CHECK_MODE = "so_vb_ngay_vb"
+STOP_WHEN_DUPLICATE_FOUND = True
+SLOW_MO_MS = 250
+PAUSE_BEFORE_CLOSE = False
+ROLE_BUTTON_NAME_HINT = ""
+```
+
+Ý nghĩa từng dòng giống hệt bản cũ (xem mục 10 – các biến vẫn quen thuộc), chỉ
+khác `DOWNLOAD_DIR`/`LOG_FILE` giờ dùng chung `DOWNLOAD_BASE_DIR`/`EXCEL_FILE`
+cho cả 3 tác vụ, mỗi tác vụ tự có thư mục con và sheet riêng. `HISTORY_DB` là
+file mới, phục vụ trang Lịch sử trên web (mục 7.3).
+
+### 5.2 Vai trò (role) – linh hoạt cho người dùng khác, không riêng gì 1 người
+
+Đây là điểm khác biệt lớn nhất so với bản cũ. Trước đây vai trò
+`"Phó Truyền tải điện"` bị viết cứng trong code; giờ mỗi tác vụ có 1 dòng
+`role_pattern` ngay trong `config.py` – **hoặc chỉnh trực tiếp trên trang web
+Cài đặt (mục 7.5), không cần mở code**:
+
+```python
+TASKS = {
+    "chu_tri": TaskConfig(
+        ...
+        role_pattern="Phó Truyền tải điện",
+        ...
+    ),
+    "phoi_hop": TaskConfig(
+        ...
+        role_pattern="Phó Truyền tải điện",
+        ...
+    ),
+    "dang_doan": TaskConfig(
+        ...
+        role_pattern="Chi bộ 1",
+        ...
+    ),
+}
+```
+
+**Người dùng khác chỉ cần**: đăng nhập DOffice, bấm vào nút góc trên có dạng
+`"<Tên> Phòng ban:"`, xem trong menu xổ xuống hiện đúng chữ gì (ví dụ
+`"Trưởng Truyền tải điện"`, `"Kỹ thuật"`, `"Chi bộ 2"`...), rồi gõ đúng cụm đó
+vào `role_pattern` tương ứng (trong `config.py` hoặc trang web Cài đặt). Không
+cần sửa bất kỳ file `.py` nào khác trong `do_auto/`.
+
+- Nếu tài khoản chỉ có **1 vai trò duy nhất** (DOffice không hiện menu chọn),
+  để `role_pattern=""` – chương trình sẽ bỏ qua bước chọn vai trò.
+- Nút "Phòng ban:" được tìm theo mẫu chung (bất kỳ tên nào + "Phòng ban:"), nên
+  **không cần** gõ tên người dùng vào đâu cả. Chỉ điền `ROLE_BUTTON_NAME_HINT`
+  nếu trang có nhiều hơn 1 nút dạng này (trường hợp rất hiếm).
+
+### 5.3 Các cờ khác trong từng tác vụ
+
+```python
+enable_finish=True/False              # có bấm "Kết thúc nhanh" + "Lưu" không
+ask_confirm_before_finish=True/False  # có hỏi y/n trước khi bấm không (chỉ có tác dụng khi chạy CLI)
+max_documents=...                     # số văn bản tối đa 1 lần chạy
+enable_download_pdf=True/False        # có tải PDF không, hay chỉ ghi Excel
+enabled=True/False                    # có nằm trong lựa chọn "Tất cả" không
+```
+
+Khuyến nghị khi test lần đầu trên máy mới:
+
+```powershell
+python run_doffice.py --tasks chu_tri --test
+```
+
+Cờ `--test` tự động ghi đè `max_documents=1`, `enable_finish=False`,
+`ask_confirm_before_finish=True`, `PAUSE_BEFORE_CLOSE=True`, `SLOW_MO_MS=800`
+cho **mọi** tác vụ trong lần chạy đó (không sửa `config.py`, không ảnh hưởng
+lần chạy thật sau này). Trang web cũng có nút "Chế độ test an toàn" tương tự
+(mục 7.2), nhưng vì web không có ai ngồi gõ `y/n`, phần hỏi xác nhận từng bước
+sẽ luôn tắt dù bật test hay không.
+
+---
+
+## 6. Chạy bằng CLI/PowerShell
+
+### 6.1 Menu chọn tác vụ (không cần nhớ tham số)
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python run_doffice.py
+```
+
+```text
+=== DOffice Auto - Chọn công việc cần xử lý ===
+  1. Văn bản Chủ trì - Đã xử lý
+  2. Văn bản Phối hợp - Chờ xử lý
+  3. Công việc Đảng/Đoàn/Công đoàn - Chờ thực hiện (Phối hợp)
+  4. Tất cả (1 + 2 + 3)
+  0. Thoát
+
+Nhập số (có thể chọn nhiều, cách nhau bằng dấu phẩy, ví dụ 1,3):
+```
+
+Gõ `4` để chạy cả 3, hoặc ví dụ `1,3` để chạy 2 trong 3 tác vụ. Chương trình
+chỉ mở/đăng nhập trình duyệt **1 lần** dù chọn bao nhiêu tác vụ.
+
+### 6.2 Chạy trực tiếp bằng tham số (không cần menu – dùng cho script/scheduler)
+
+```powershell
+python run_doffice.py --all
+python run_doffice.py --tasks chu_tri,phoi_hop
+python run_doffice.py --tasks dang_doan --no-pause
+python run_doffice.py --list        # xem danh sách tác vụ hiện có
+```
+
+### 6.3 Chạy tất cả bằng `run_all_doffice.ps1`
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\run_all_doffice.ps1"
+```
+
+File này gọi `python run_doffice.py --all --no-pause`, có khoá chống chạy
+chồng (lock file) và ghi log vào `scheduler_logs\`, giống cơ chế bản cũ.
+Muốn đổi danh sách tác vụ chạy tự động, sửa biến `$RunnerArgs` đầu file, ví dụ:
+
+```powershell
+$RunnerArgs = @("--tasks", "chu_tri,phoi_hop", "--no-pause")
+```
+
+---
+
+## 7. Bảng điều khiển web
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python run_web.py
+```
+
+Server chạy tại `http://127.0.0.1:8877` và tự mở trình duyệt sau ~1 giây. Đóng
+cửa sổ terminal (hoặc `Ctrl+C`) để tắt server.
+
+> **Đây là công cụ nội bộ, dùng 1 mình (hoặc vài người tin cậy qua Tailscale)**
+> – trang web KHÔNG có màn hình đăng nhập riêng. Không port-forward ra
+> internet công khai. Muốn dùng từ điện thoại/laptop khác trong cùng
+> Tailscale, mở `run_web.py`, đổi `HOST = "127.0.0.1"` thành `HOST = "0.0.0.0"`,
+> chạy lại, rồi vào địa chỉ Tailscale của máy này, ví dụ `http://100.x.y.z:8877`.
+
+### 7.1 Trang Bảng điều khiển (`/`)
+
+- Mỗi tác vụ hiện là 1 thẻ: đường dẫn menu DOffice, vai trò đang dùng, số văn
+  bản tối đa, và **lần chạy gần nhất** (thành công/lỗi, thời điểm, số văn bản
+  ghi mới) – lấy từ trang Lịch sử.
+- Tick chọn 1, vài, hoặc cả 3 tác vụ rồi bấm **"Chạy các tác vụ đã chọn"**.
+- Có banner cảnh báo nếu **chưa có phiên đăng nhập** hoặc **phiên đã lưu quá 7
+  ngày** (nên chạy lại `login_save_state.py`).
+
+### 7.2 Chạy ẩn (headless) hay hiện cửa sổ?
+
+- **Chạy ẩn** (mặc định khi dùng web): Chromium chạy ngầm, không hiện cửa sổ.
+  Phù hợp khi bạn kích hoạt từ xa (vd từ điện thoại qua Tailscale) vì không có
+  ai ngồi xem cửa sổ trên máy chạy server.
+- **Chạy hiện cửa sổ**: bỏ tick "Chạy ẩn" nếu bạn đang ngồi ngay máy chạy
+  server và muốn quan sát/debug trực tiếp như khi chạy CLI.
+- **Quan trọng**: cửa sổ Chromium (nếu chọn hiện) luôn mở trên **máy đang chạy
+  `run_web.py`**, không phải máy bạn đang mở trình duyệt xem dashboard.
+
+### 7.3 Nhật ký trực tiếp + trang Lịch sử
+
+Khi bấm chạy, khung "Nhật ký chạy trực tiếp" hiện ngay dưới bảng chọn tác vụ,
+log giống hệt khi chạy CLI, cập nhật theo thời gian thực (Server-Sent Events).
+Mở lại trang giữa chừng 1 lượt chạy vẫn tự nối lại đúng luồng log đang chạy.
+
+Trang **Lịch sử** (`/history`) liệt kê 150 lần chạy gần nhất – **gộp cả lần
+chạy từ CLI/PowerShell lẫn từ web** (cột "Nguồn"), vì cả 2 đều ghi vào cùng 1
+file `HISTORY_DB`.
+
+### 7.4 Trang Excel (`/excel`)
+
+Xem trực tiếp dữ liệu 3 sheet (300 dòng gần nhất mỗi sheet, mới nhất ở trên),
+có ô tìm kiếm lọc theo bất kỳ cột nào, và nút **Tải file Excel** để tải nguyên
+file `.xlsx` về xem đầy đủ/chỉnh sửa.
+
+### 7.5 Trang Cài đặt (`/settings`)
+
+Chỉnh nhanh các mục hay đổi nhất **mà không cần mở code**:
+
+- Chung: dừng khi gặp trùng, khoá kiểm tra trùng, tốc độ thao tác trình duyệt.
+- Từng tác vụ: bật/tắt, **vai trò (role_pattern)**, số văn bản tối đa, có tải
+  PDF không, có bấm Kết thúc không, có hỏi xác nhận trước khi Kết thúc không.
+
+Lưu sẽ ghi vào `user_settings.json` (không đụng `config.py`). File này được
+**cả CLI (`run_doffice.py`) lẫn web** đọc mỗi lần chạy qua
+`do_auto/settings_store.py`, nên sửa 1 lần ở trang web áp dụng cho cả 2 cách
+chạy, không bị lệch. Các mục điều hướng menu (sidebar, tab...) vẫn phải sửa
+trong `config.py` vì sai sót ở đây có thể làm hỏng hẳn tác vụ.
+
+---
+
+## 8. Tạo Scheduled Task tự động (CLI)
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\create_doffice_task_examples.ps1"
+```
+
+Script mẫu tạo 3 task chạy lúc 02:30, 12:45, 18:15 hằng ngày, gọi
+`run_all_doffice.ps1`. Chỉnh `$ProjectDir`, tên task và giờ chạy theo ý bạn.
+Kiểm tra / chạy thử / xoá task giống hệt bản cũ:
+
+```powershell
+Get-ScheduledTask -TaskName "DOffice Auto 0230"
+Start-ScheduledTask -TaskName "DOffice Auto 0230"
+Get-ScheduledTaskInfo -TaskName "DOffice Auto 0230"
+Unregister-ScheduledTask -TaskName "DOffice Auto 0230" -Confirm:$false
+```
+
+(Scheduled Task luôn chạy qua CLI/`run_all_doffice.ps1`, không qua web – web
+dashboard cần bạn tự bấm "Chạy".)
+
+---
+
+## 9. Gộp dữ liệu Excel cũ (tuỳ chọn, chỉ chạy 1 lần)
+
+Nếu bạn đã dùng 3 script cũ và muốn giữ lại lịch sử trong 3 file Excel cũ
+(`Tong_hop_VB_chu_tri_da_XL.xlsx`, `Tong_hop_VB_phoi_hop.xlsx`,
+`Tong_hop_VB_Dang_doan_phoi_hop.xlsx`) vào file gộp mới:
+
+1. Mở `migrate_old_excel.py`, sửa `OLD_FILES` cho đúng đường dẫn 3 file cũ trên
+   máy bạn.
+2. Chạy:
+
+   ```powershell
+   python migrate_old_excel.py
+   ```
+
+3. Script tự thêm từng dòng cũ vào đúng sheet tương ứng trong
+   `config.EXCEL_FILE`, **tự bỏ qua** dòng đã trùng (theo cùng khoá kiểm tra
+   trùng trong `config.DUPLICATE_CHECK_MODE`) nên chạy lại nhiều lần vẫn an
+   toàn, không bị nhân đôi dữ liệu.
+
+Nếu không cần giữ lịch sử cũ, bỏ qua bước này – các sheet mới sẽ tự tạo trống
+trong lần chạy đầu tiên.
+
+---
+
+## 10. Ý nghĩa các biến cấu hình (tham khảo nhanh)
+
+| Biến | Ý nghĩa |
+|---|---|
+| `DOWNLOAD_BASE_DIR` | Thư mục gốc chứa PDF; mỗi tác vụ có 1 thư mục con (`download_subdir`) |
+| `EXCEL_FILE` | 1 file Excel duy nhất, mỗi tác vụ 1 sheet (`sheet_name`) |
+| `HISTORY_DB` | File SQLite lưu lịch sử chạy, dùng cho trang Lịch sử trên web |
+| `MAX_DOCUMENTS` (`max_documents` trong từng tác vụ) | Số văn bản tối đa 1 lần chạy |
+| `ENABLE_DOWNLOAD_PDF` (`enable_download_pdf`) | Có tải PDF hay chỉ ghi Excel |
+| `ENABLE_FINISH_DOCUMENT` (`enable_finish`) | Có bấm Kết thúc nhanh + Lưu không |
+| `ASK_CONFIRM_BEFORE_FINISH` (`ask_confirm_before_finish`) | Hỏi y/n trước khi Kết thúc/Lưu (chỉ có tác dụng khi chạy CLI) |
+| `STOP_WHEN_DUPLICATE_FOUND` | Dừng khi gặp văn bản đã có trong Excel |
+| `DUPLICATE_CHECK_MODE` | `"so_vb_ngay_vb"` (khuyến nghị) / `"so_vb"` / `"so_vb_time"` |
+| `REFRESH_LIST_EVERY` | 0 = không tự load lại danh sách; >0 = load lại sau N văn bản |
+| `SLOW_MO_MS` | Tốc độ thao tác trình duyệt, tăng để dễ quan sát khi test |
+| `PAUSE_BEFORE_CLOSE` | Dừng chờ Enter trước khi đóng browser (luôn `False` khi chạy qua web) |
+| `role_pattern` | Tên chức danh cần chọn trên DOffice cho từng tác vụ (mục 5.2) |
+
+Gợi ý cấu hình theo chế độ (giống bản cũ):
+
+**Test cực an toàn** (dùng `--test` hoặc nút test trên web là đủ, không cần tự set):
+`max_documents=1`, `enable_finish=False`, `ask_confirm_before_finish=True`,
+`PAUSE_BEFORE_CLOSE=True`, `SLOW_MO_MS=800`.
+
+**Chạy tự động bằng Scheduled Task**:
+`ask_confirm_before_finish=False`, `PAUSE_BEFORE_CLOSE=False`, `SLOW_MO_MS=0`
+(có thể sửa trực tiếp trong `config.py`, trang web Cài đặt, hoặc truyền `--no-pause`).
+
+---
+
+## 11. Kết quả đầu ra
+
+- PDF: `DOWNLOAD_BASE_DIR\<download_subdir>\yymmdd-soVB - tên file.pdf`
+- Excel: 1 file `EXCEL_FILE`, 3 sheet `Chu_tri` / `Phoi_hop` / `Dang_doan`, cột
+  giống hệt bản cũ (STT, Số VB, Ngày VB, Nơi phát hành, Trích yếu, Người chỉ
+  đạo, Thời gian chỉ đạo *(ẩn)*, Nội dung chỉ đạo, Chủ trì, Phối hợp, Thư mục
+  lưu, Tên file lưu *(có hyperlink)*, Thời gian lưu). Xem nhanh trên web ở
+  trang Excel (mục 7.4).
+- Lịch sử chạy: `HISTORY_DB` (SQLite), xem ở trang Lịch sử trên web hoặc mở
+  bằng bất kỳ công cụ SQLite nào.
+- Ảnh debug khi lỗi: `debug_<tiền tố tác vụ>_<loại lỗi>.png` trong thư mục chạy
+  script, ví dụ `debug_vb_phoi_hop_download_failed.png`.
+
+---
+
+## 12. Lỗi thường gặp
+
+| Triệu chứng | Cách xử lý |
+|---|---|
+| `Không thấy file session: playwright/.auth/state.json` | Chạy `python login_save_state.py` |
+| Script tự quay về màn hình đăng nhập | Phiên hết hạn, chạy lại `login_save_state.py` |
+| Không ghi được Excel | Đóng file `Tong_hop_DOffice.xlsx` đang mở rồi chạy lại |
+| Không click được nút Tải xuống / Kết thúc / Lưu | Xem ảnh debug tương ứng; kiểm tra DOffice có đổi giao diện, có đổi tên nút không |
+| Chọn nhầm/không chọn được vai trò | Kiểm tra lại `role_pattern` trong `config.py` (hoặc trang Cài đặt) có đúng chữ hiển thị trong menu "...Phòng ban:" không (mục 5.2) |
+| Scheduled Task chạy nhưng không thấy kết quả | `Get-ScheduledTaskInfo`, kiểm tra `$ProjectDir`/`$PythonExe` trong `run_all_doffice.ps1`, và `PAUSE_BEFORE_CLOSE` phải là `False` |
+| Trang web báo "Chưa có phiên đăng nhập" dù đã chạy `login_save_state.py` | Kiểm tra `AUTH_STATE` trong `config.py` có trỏ đúng đường dẫn không; đường dẫn tương đối tính từ thư mục đang chạy `run_web.py`/`run_doffice.py` |
+| Bấm "Chạy" trên web nhưng không thấy cửa sổ Chromium đâu | Đang bật "Chạy ẩn (headless)" – tắt tick đó nếu muốn thấy cửa sổ, hoặc xem log trực tiếp trong khung Nhật ký thay vì nhìn cửa sổ |
+| 2 người cùng bấm "Chạy" trên web cùng lúc | Web chỉ cho 1 lượt chạy hoạt động tại 1 thời điểm (giống lock file của `run_all_doffice.ps1`); lượt sau sẽ báo lỗi "Đang có 1 lượt chạy khác" |
+
+---
+
+## 13. Khi DOffice đổi giao diện – sửa ở đâu
+
+DOffice là web app động, có thể đổi HTML/selector sau khi cập nhật. Nhờ đã gộp
+logic dùng chung, giờ chỉ cần sửa **1 chỗ** thay vì sửa lặp lại ở 3 file (và
+cả CLI lẫn web dashboard tự động dùng bản sửa mới, vì cả 2 cùng gọi chung
+`do_auto/`):
+
+| Thay đổi trên DOffice | Sửa ở file |
+|---|---|
+| Đổi cấu trúc HTML dòng văn bản (So VB, Ngày VB, Trích yếu, khối chỉ đạo...) | `do_auto/extract.py` |
+| Đổi tên/vị trí nút Tải xuống, PDF viewer | `do_auto/pdf_download.py` |
+| Đổi tên/vị trí nút Kết thúc nhanh / Lưu | `do_auto/finish_doc.py` |
+| Đổi cách vào sidebar / link / tab | `do_auto/browser_nav.py` (hàm `click_sidebar_item`, `click_tab`) |
+| Đổi cách chọn chức danh | `do_auto/browser_nav.py` (hàm `choose_role_if_needed`) — thường chỉ cần sửa `role_pattern` trong `config.py`/trang Cài đặt, không cần sửa code |
+
+Khi sửa, nên test với `--test` (giới hạn 1 văn bản, hỏi xác nhận từng bước)
+trước khi chạy thật.
+
+---
+
+## 14. Giới hạn hiện tại của bảng điều khiển web
+
+Ghi chú thẳng thắn để bạn không bất ngờ khi dùng:
+
+- **Không có xác thực đăng nhập riêng.** Ai vào được địa chỉ web (localhost
+  hoặc qua Tailscale) đều bấm "Chạy" được. Chỉ nên bật `HOST = "0.0.0.0"` khi
+  chắc chắn mọi thiết bị trong Tailscale của bạn đều đáng tin.
+- **Chỉ 1 lượt chạy tại 1 thời điểm** (khoá bằng in-memory lock trong tiến
+  trình Flask), không có hàng đợi (queue) nhiều lượt chạy nối tiếp nhau.
+- **`Flask dev server`** (`app.run(...)`) dùng để đơn giản hoá triển khai –
+  không cần Nginx/Gunicorn/Docker vì Playwright cần chạy trực tiếp trên máy có
+  Chromium, không hợp để container hoá như dự án tra cứu hoá đơn điện tử của
+  bạn. Với quy mô dùng nội bộ 1-vài người, server này đủ ổn định; nếu cần chắc
+  chắn hơn, có thể thay bằng `waitress-serve webapp.app:app --port=8877`.
+- **Nhật ký trực tiếp dùng chung `sys.stdout`** cho cả tiến trình trong lúc
+  đang chạy 1 tác vụ – vì chỉ cho phép 1 lượt chạy cùng lúc nên không có
+  nguy cơ trộn log giữa 2 lượt chạy khác nhau, nhưng nếu bạn tự thêm code
+  `print()` ở nơi khác trong lúc đang chạy, dòng đó cũng sẽ lọt vào khung
+  Nhật ký.

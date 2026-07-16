@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Lịch sử - DOffice Auto{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-head">
+    <h1>Lịch sử chạy</h1>
+    <p>150 lần chạy gần nhất, cả từ CLI/PowerShell lẫn từ web. Mới nhất ở trên.</p>
+  </div>
+
+  {% if not rows %}
+  <div class="empty-state">Chưa có lần chạy nào được ghi lại. Chạy 1 tác vụ ở trang Bảng điều khiển hoặc bằng CLI để bắt đầu có lịch sử.</div>
+  {% else %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Trạng thái</th>
+          <th>Tác vụ</th>
+          <th>Bắt đầu</th>
+          <th>Kết thúc</th>
+          <th>Ghi mới</th>
+          <th>Nguồn</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>
+            {% if r.ok %}<span class="badge badge-success">OK</span>{% else %}<span class="badge badge-danger">Lỗi</span>{% endif %}
+          </td>
+          <td>{{ r.task_label }}</td>
+          <td>{{ r.started_at }}</td>
+          <td>{{ r.finished_at }}</td>
+          <td>{{ r.processed }}</td>
+          <td><span class="badge badge-muted">{{ r.trigger_source }}</span></td>
+          <td class="note-cell">{{ r.note }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
