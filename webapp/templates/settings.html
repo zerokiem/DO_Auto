@@ -68,6 +68,20 @@
 
     <hr class="divider">
 
+    <h2 class="section-title">Đường dẫn hiển thị / Link mở file</h2>
+    <div class="field-row">
+      <label for="display_base_dir_override">Đường dẫn ổ đĩa hiển thị trong Excel (cột "Thư mục lưu")</label>
+      <input type="text" name="display_base_dir_override" id="display_base_dir_override" value="{{ common.DISPLAY_BASE_DIR_OVERRIDE }}" placeholder="Ví dụ: S:\Working\Van_ban">
+      <p class="field-hint">Để trống sẽ dùng giá trị mặc định hiện tại: <code>{{ common.DISPLAY_BASE_DIR }}</code>. Điền vào đây nếu ổ đĩa map NAS trên máy bạn khác chữ này.</p>
+    </div>
+    <div class="field-row">
+      <label for="display_base_url_override">Link mở file qua web/Tailscale (hyperlink cột "Tên file lưu")</label>
+      <input type="text" name="display_base_url_override" id="display_base_url_override" value="{{ common.DISPLAY_BASE_URL_OVERRIDE }}" placeholder="Ví dụ: http://100.100.1.254:8877/vb">
+      <p class="field-hint">Để trống sẽ dùng giá trị mặc định hiện tại: <code>{{ common.DISPLAY_BASE_URL or "(chưa đặt - đang dùng link file:// trên máy)" }}</code>. Bấm link này mở được cả trên điện thoại có Tailscale.</p>
+    </div>
+
+    <hr class="divider">
+
     {% for key, task in tasks %}
     <h2 class="section-title">{{ task.label }}</h2>
     <div class="field-row">

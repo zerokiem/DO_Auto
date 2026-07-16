@@ -52,6 +52,8 @@ COMMON_FIELD_RENDER = {
     "TELEGRAM_BOT_TOKEN": lambda v: json.dumps(str(v), ensure_ascii=False),
     "TELEGRAM_CHAT_ID": lambda v: json.dumps(str(v), ensure_ascii=False),
     "TELEGRAM_NOTIFY_ONLY_IF_NEW": lambda v: "True" if v else "False",
+    "DISPLAY_BASE_DIR_OVERRIDE": lambda v: json.dumps(str(v).strip(), ensure_ascii=False),
+    "DISPLAY_BASE_URL_OVERRIDE": lambda v: json.dumps(str(v).strip(), ensure_ascii=False),
 }
 
 # Gia tri mac dinh dung khi config.py cua nguoi dung CHUA CO bien nay (ban cu
@@ -73,6 +75,8 @@ _DEFAULTS: Dict[str, Any] = {
     "TELEGRAM_NOTIFY_ONLY_IF_NEW": False,
     "DISPLAY_BASE_DIR": None,
     "DISPLAY_BASE_URL": "",
+    "DISPLAY_BASE_DIR_OVERRIDE": "",
+    "DISPLAY_BASE_URL_OVERRIDE": "",
 }
 
 _VALUE_PATTERN = r'(?:True|False|"(?:[^"\\]|\\.)*"|-?\d+)'
@@ -190,6 +194,9 @@ def build_effective_config(base_cfg) -> SimpleNamespace:
         DISPLAY_BASE_DIR=getattr(base_cfg, "DISPLAY_BASE_DIR", None) or str(download_base_dir),
         # URL web toi NAS de bam mo file tren dien thoai/Tailscale. "" -> giu link file://.
         DISPLAY_BASE_URL=getattr(base_cfg, "DISPLAY_BASE_URL", "") or "",
+        # Gia tri nguoi dung tu dien qua trang Cai dat (rong = dang dung mac dinh/env).
+        DISPLAY_BASE_DIR_OVERRIDE=_get(base_cfg, "DISPLAY_BASE_DIR_OVERRIDE"),
+        DISPLAY_BASE_URL_OVERRIDE=_get(base_cfg, "DISPLAY_BASE_URL_OVERRIDE"),
         EXCEL_FILE=base_cfg.EXCEL_FILE,
         HISTORY_DB=getattr(base_cfg, "HISTORY_DB", download_base_dir / "doffice_auto_history.sqlite3"),
         LOGS_DIR=getattr(base_cfg, "LOGS_DIR", download_base_dir / "logs"),

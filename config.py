@@ -34,22 +34,29 @@ AUTH_STATE = Path("playwright/.auth/state.json")
 # quay ve duong dan Windows cu, nen file nay dung duoc o ca 2 moi truong.
 DOWNLOAD_BASE_DIR = Path(os.environ.get("DOFFICE_DATA_DIR") or r"D:\OneDrive - NPT\9. Jobs\Van_ban")
 
+# Nguoi dung co the dien 2 gia tri duoi day qua trang web "Cai dat" (khong can
+# sua file nay bang tay). De trong "" thi dung mac dinh (bien moi truong hoac
+# DOWNLOAD_BASE_DIR) nhu truoc - dien qua web SE GHI DE bien moi truong.
+DISPLAY_BASE_DIR_OVERRIDE = ""
+DISPLAY_BASE_URL_OVERRIDE = ""
+
 # Duong dan HIEN THI trong Excel/web (cot "Thu muc luu" va hyperlink ten file) de
 # nguoi dung bam MO DUOC file tren may Windows cua minh. Ly do: khi chay trong
 # Docker tren NAS, file that nam o /data BEN TRONG container - duong dan do vo
 # nghia voi may Windows. Tren cac may cua ban, thu muc du lieu tren NAS duoc map
 # vao o S:, nen phai ghi vao Excel duong dan kieu "S:\..." thi click moi mo ra.
-# Uu tien bien moi truong DOFFICE_DISPLAY_DIR (dat trong docker-compose.yml). Khi
-# chay TRUC TIEP tren Windows (khong dat bien) thi mac dinh = DOWNLOAD_BASE_DIR
-# nen khong thay doi gi so voi truoc.
-DISPLAY_BASE_DIR = os.environ.get("DOFFICE_DISPLAY_DIR") or str(DOWNLOAD_BASE_DIR)
+# Thu tu uu tien: DISPLAY_BASE_DIR_OVERRIDE (dien qua web) > bien moi truong
+# DOFFICE_DISPLAY_DIR (dat trong docker-compose.yml) > DOWNLOAD_BASE_DIR (mac
+# dinh khi chay truc tiep tren Windows, khong doi gi so voi truoc).
+DISPLAY_BASE_DIR = DISPLAY_BASE_DIR_OVERRIDE or os.environ.get("DOFFICE_DISPLAY_DIR") or str(DOWNLOAD_BASE_DIR)
 
 # Neu dat (kieu URL http...), HYPERLINK cot "Ten file luu" trong Excel se tro toi
 # NAS qua web (vd http://100.100.1.254:8877/vb) thay vi link file:// tren o S:.
 # Loi ich: bam MO DUOC tren DIEN THOAI (co Tailscale) va moi thiet bi trong mang,
 # khong phu thuoc o dia map S:. Cot "Thu muc luu" van hien duong dan S: cho de tra
-# cuu tren may tinh. De trong "" thi giu link file:// nhu truoc.
-DISPLAY_BASE_URL = os.environ.get("DOFFICE_DISPLAY_URL") or ""
+# cuu tren may tinh. De trong "" thi giu link file:// nhu truoc. Thu tu uu tien
+# giong DISPLAY_BASE_DIR o tren.
+DISPLAY_BASE_URL = DISPLAY_BASE_URL_OVERRIDE or os.environ.get("DOFFICE_DISPLAY_URL") or ""
 
 # 1 file Excel duy nhat, gom du lieu cua ca 3 tac vu, moi tac vu 1 sheet rieng
 # (xem sheet_name trong tung TaskConfig ben duoi).

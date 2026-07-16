@@ -5,9 +5,8 @@
 <section class="panel">
   <div class="panel-head">
     <h1>Lịch chạy tự động</h1>
-    <p>Chọn tối đa 2 thời điểm chạy tự động mỗi ngày (tác vụ "Tất cả"). Lưu sẽ xoá lịch cũ và tạo lại
-    <strong>1 Windows Scheduled Task duy nhất</strong> ("{{ 'DOffice Auto Schedule' }}") với đúng các thời điểm này
-    làm trigger &ndash; không tạo nhiều task rời rạc.</p>
+    <p>Chọn tối đa 3 thời điểm chạy tự động mỗi ngày (tác vụ "Tất cả"). Lưu sẽ xoá lịch cũ và đặt lại
+    đúng các thời điểm này.</p>
   </div>
 
   {% if saved %}
@@ -18,21 +17,33 @@
     {% endif %}
   {% endif %}
 
+  {% if is_windows %}
   <div class="banner banner-warning">
-    Tính năng này chỉnh Windows Task Scheduler trên máy đang chạy server &ndash; chỉ hoạt động trên Windows.
+    Server đang chạy trên <strong>Windows</strong>: tính năng này tạo 1 Windows Scheduled Task duy nhất
+    ("DOffice Auto Schedule") với đúng các thời điểm này làm trigger.
     Nếu gặp lỗi quyền truy cập, thử chạy <code>python run_web.py</code> với quyền Administrator.
   </div>
+  {% else %}
+  <div class="banner banner-success">
+    Server đang chạy trên <strong>NAS (Linux/Docker)</strong>: lịch chạy dùng 1 luồng nền ngay trong tiến
+    trình web (không dùng cron), chạy được miễn container còn hoạt động (<code>restart: unless-stopped</code>).
+  </div>
+  {% endif %}
 
   <form method="post" class="settings-form">
     <div class="field-row">
       <label for="time1">Thời điểm 1</label>
-      <input type="time" name="time1" id="time1" value="{{ times[0] if times|length > 0 else '02:30' }}">
+      <input type="time" name="time1" id="time1" value="{{ times[0] if times|length > 0 else '03:45' }}">
     </div>
     <div class="field-row">
-      <label for="time2">Thời điểm 2 (để trống nếu chỉ cần 1 thời điểm)</label>
+      <label for="time2">Thời điểm 2 (để trống nếu không cần)</label>
       <input type="time" name="time2" id="time2" value="{{ times[1] if times|length > 1 else '' }}">
     </div>
-    <p class="field-hint">Để trống cả 2 ô rồi bấm Lưu sẽ xoá lịch chạy tự động hiện có.</p>
+    <div class="field-row">
+      <label for="time3">Thời điểm 3 (để trống nếu không cần)</label>
+      <input type="time" name="time3" id="time3" value="{{ times[2] if times|length > 2 else '' }}">
+    </div>
+    <p class="field-hint">Để trống cả 3 ô rồi bấm Lưu sẽ xoá lịch chạy tự động hiện có.</p>
     <button type="submit" class="btn btn-primary">Lưu lịch chạy</button>
   </form>
 </section>

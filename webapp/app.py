@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import queue
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -297,6 +298,12 @@ def settings_page():
             "TELEGRAM_BOT_TOKEN": request.form.get("telegram_bot_token", effective_cfg.TELEGRAM_BOT_TOKEN).strip(),
             "TELEGRAM_CHAT_ID": request.form.get("telegram_chat_id", effective_cfg.TELEGRAM_CHAT_ID).strip(),
             "TELEGRAM_NOTIFY_ONLY_IF_NEW": request.form.get("telegram_notify_only_if_new") == "on",
+            "DISPLAY_BASE_DIR_OVERRIDE": request.form.get(
+                "display_base_dir_override", effective_cfg.DISPLAY_BASE_DIR_OVERRIDE
+            ).strip(),
+            "DISPLAY_BASE_URL_OVERRIDE": request.form.get(
+                "display_base_url_override", effective_cfg.DISPLAY_BASE_URL_OVERRIDE
+            ).strip(),
         }
         if doffice_url:
             common_updates["DOFFICE_URL"] = doffice_url
@@ -343,6 +350,10 @@ def settings_page():
         "TELEGRAM_BOT_TOKEN": effective_cfg.TELEGRAM_BOT_TOKEN,
         "TELEGRAM_CHAT_ID": effective_cfg.TELEGRAM_CHAT_ID,
         "TELEGRAM_NOTIFY_ONLY_IF_NEW": effective_cfg.TELEGRAM_NOTIFY_ONLY_IF_NEW,
+        "DISPLAY_BASE_DIR": effective_cfg.DISPLAY_BASE_DIR,
+        "DISPLAY_BASE_URL": effective_cfg.DISPLAY_BASE_URL,
+        "DISPLAY_BASE_DIR_OVERRIDE": effective_cfg.DISPLAY_BASE_DIR_OVERRIDE,
+        "DISPLAY_BASE_URL_OVERRIDE": effective_cfg.DISPLAY_BASE_URL_OVERRIDE,
     }
     saved = request.args.get("saved") == "1"
     error = request.args.get("error")
@@ -362,17 +373,22 @@ def scheduler_page():
     if request.method == "POST":
         t1 = request.form.get("time1", "").strip()
         t2 = request.form.get("time2", "").strip()
-        times = [t for t in (t1, t2) if t]
+        t3 = request.form.get("time3", "").strip()
+        times = [t for t in (t1, t2, t3) if t]
 
         if not times:
             ok, message = scheduler_mod.remove_schedule()
         else:
             ok, message = scheduler_mod.apply_schedule(PROJECT_DIR, times)
 
-        return render_template("scheduler.html", times=times, saved=True, ok=ok, message=message)
+        return render_template(
+            "scheduler.html", times=times, saved=True, ok=ok, message=message, is_windows=sys.platform == "win32"
+        )
 
     current_times = scheduler_mod.get_current_times()
-    return render_template("scheduler.html", times=current_times, saved=False, ok=None, message="")
+    return render_template(
+        "scheduler.html", times=current_times, saved=False, ok=None, message="", is_windows=sys.platform == "win32"
+    )
 
 
 if __name__ == "__main__":
