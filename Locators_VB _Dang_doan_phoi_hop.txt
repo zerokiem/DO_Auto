@@ -1,0 +1,26 @@
+Điều hướng DOffice:
+    page.get_by_role("button", name="Nguyễn Xuân Bình Phòng ban:").click()
+    page.get_by_role("menuitem", name="Chi Bộ").click()
+    page.locator("div").filter(has_text="Công việc").nth(3).click()
+    page.get_by_role("link", name="Chờ thực hiện").click()
+    page.get_by_role("tab", name="Phối hợp (11)").click()
+    page.locator(".w-8").first.click()
+    with page.expect_download() as download_info:
+        page.get_by_role("button", name="Tải xuống").click()
+    download = download_info.value
+    page.get_by_role("button", description="Kêt thúc nhanh", exact=True).click()
+    page.get_by_role("button", name=" Lưu").click()
+    page.locator(".w-8").first.click()
+
+
+HTML của nội dung văn bản:
+<tr role="row" mat-row="" class="mat-row cdk-row ng-star-inserted"><td role="cell" mat-cell="" class="mat-cell cdk-cell dark:bg-gray-900 cdk-column-KY_HIEU_CV mat-column-KY_HIEU_CV ng-star-inserted focus" style="flex-direction: column; display: flex;"><div fxlayout="row" style="flex-direction: row; box-sizing: border-box; display: flex;"><div class="w-8 flex items-center justify-end"><!----></div><div class="vb-item"><div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;"><span style="font-size: 16px; font-weight: 600;"><!---->04-BC/ĐU </span><div class="dokhan" style="display: flex; flex-direction: row;"><!----><span mattooltip="Ngày giao việc" fxflex="" fxlayout="row" fxlayoutalign="end none" class="mat-tooltip-trigger" style="color: rgb(94, 94, 94); flex-direction: row; box-sizing: border-box; display: flex; place-content: stretch flex-end; align-items: stretch; flex: 1 1 0%;" aria-describedby="cdk-describedby-message-581" cdk-describedby-host="0"><!---->&nbsp;25/05/2026 </span><!----></div></div><div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; height: fit-content; margin-bottom: 5px;"><span style="color: #335FB3; margin: 0px;">Truyền tải điện Tp. Hồ Chí Minh 2</span><span mattooltip="Hạn giải quyết" class="mat-tooltip-trigger" style="margin: 0px;" aria-describedby="cdk-describedby-message-582" cdk-describedby-host="0">02/06/2026</span><!----></div><div fxlayout="column" fxlayoutalign="none none" style="flex-direction: column; box-sizing: border-box; display: flex; place-content: stretch flex-start; align-items: stretch;"><span style="margin-bottom: 5px;">BÁO CÁO kết quả công tác tháng 4, nhiệm vụ công tác tháng 5 năm 2026</span><!----><lib-view-noi-dung-thuc-hien class="text-blue ng-star-inserted" _nghost-olx-c189=""><span _ngcontent-olx-c189=""><span style="font-weight:bold !important;">Nguyễn Xuân Bình - 25/05/2026 09:48:41</span><br><span style="font-weight:bold;">Chủ trì: Nguyễn Trung Hiếu</span><br><span>Phối hợp: Nguyễn Xuân Bình; Nguyễn Văn Huân; Nguyễn Hồng Hải; Đặng Thanh Hiền; Đào Viết Trường; Bùi Đức Minh; Nguyễn Như Bình; Lê Chí Thanh; Lê Xuân Tuyên; Đỗ Mạnh Tuấn; Đinh Thị Thu Hằng; Phan Công Khiêm; Hoàng Đắc Sanh; Phạm Mạnh Cường; Lương Ngọc Phú; Phan Anh Dũng; Nguyễn Ngọc Lam; Nguyễn Văn Tuấn; Nguyễn Quốc Khánh</span><br></span><button _ngcontent-olx-c189="" id="click" style="display: none;">Click</button></lib-view-noi-dung-thuc-hien><!----></div><!----></div></div></td><!----></tr>
+
+Các selector thông tin văn bản:
+- Số VB: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(1) > span
+- Ngày VB: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(1) > div > span
+- Nơi gửi: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(2) > span:nth-child(1)
+- Trích yếu: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(3) > span
+- Người chỉ đạo và thời gian chỉ đạo: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(3) > lib-view-noi-dung-thuc-hien > span > span:nth-child(1)
+- Chủ trì: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(3) > lib-view-noi-dung-thuc-hien > span > span:nth-child(3)
+- Phối hợp: #mat-tab-content-16-1 > div > div > table > tbody > tr:nth-child(2) > td > div > div.vb-item > div:nth-child(3) > lib-view-noi-dung-thuc-hien > span > span:nth-child(5)

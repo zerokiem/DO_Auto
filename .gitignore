@@ -1,0 +1,19 @@
+```gitignore
+
+# --- Các file screenshot ---
+*.png
+**/screenshot/
+
+# --- Các file login ---
+**/.auth/
+
+# --- Các file environment ---
+**/.venv/
+
+# --- VSCode ---
+.vscode/*.log
+
+# --- Hệ điều hành ---
+Thumbs.db
+.DS_Store
+```
