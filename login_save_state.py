@@ -18,6 +18,10 @@ luu phien dang nhap, ai co file nay coi nhu dang nhap duoc DOffice thay ban.
 """
 from __future__ import annotations
 
+from do_auto.text_utils import fix_windows_console_encoding
+
+fix_windows_console_encoding()
+
 from playwright.sync_api import sync_playwright
 
 import config

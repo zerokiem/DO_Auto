@@ -7,11 +7,36 @@ DO_Dang_Doan_phoi_hop_v3.py) - logic 3 file nay giong het nhau nen chi giu 1 ban
 from __future__ import annotations
 
 import re
+import sys
 import time
 import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Dict
+
+
+def fix_windows_console_encoding() -> None:
+    """Ep stdout/stderr dung UTF-8 tren Windows, goi O DAU MOI SCRIPT CHINH
+    truoc bat ky print() nao co dau tieng Viet.
+
+    Ly do can co ham nay: Python chi TU DONG dung UTF-8 cho console khi stdout
+    la 1 cua so console THAT (PEP 528). Ngay khi output bi redirect ra file/log
+    (vd `python run_web.py > log.txt`, chay qua Task Scheduler co Log Path, hay
+    qua pipe) thi Python quay ve dung codepage ANSI mac dinh cua may (thuong la
+    cp1252 tren Windows tieng Viet) - codepage nay KHONG the ma hoa cac ky tu co
+    dau, gay UnicodeEncodeError va crash ngay dong print() dau tien. Vi
+    run_all_doffice.ps1 va install_web_startup.ps1 deu co the redirect output
+    ra file log, loi nay se bi kich hoat that su tren may nguoi dung khac (khong
+    chi trong luc test)."""
+    if sys.platform != "win32":
+        return
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is not None and hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
 
 
 def wait(page, ms: int = 1000) -> None:

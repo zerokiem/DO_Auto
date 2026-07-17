@@ -29,6 +29,10 @@ import threading
 import time
 import webbrowser
 
+from do_auto.text_utils import fix_windows_console_encoding
+
+fix_windows_console_encoding()
+
 import config as base_config
 from webapp.app import app, run_manager
 
