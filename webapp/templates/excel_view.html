@@ -5,8 +5,7 @@
 <section class="panel">
   <div class="panel-head panel-head-row">
     <div>
-      <h1>Xem file Excel tổng hợp</h1>
-      <p>{{ excel_file }}</p>
+      <h1>Tổng hợp các Văn bản đã xử lý</h1>
     </div>
     <a class="btn btn-secondary" href="{{ url_for('excel_download') }}">Tải file Excel</a>
   </div>
@@ -48,10 +47,18 @@
         </tr>
       </thead>
       <tbody>
-        {% for row in rows %}
+        {% for row, file_link in zip(rows, file_links) %}
         <tr>
           {% for col, val in zip(columns, row) %}
-          {% if col != "Thời gian chỉ đạo" %}<td>{{ val if val is not none else "" }}</td>{% endif %}
+          {% if col != "Thời gian chỉ đạo" %}
+          <td>
+            {% if col == "Tên file lưu" and val and file_link %}
+            <a href="{{ file_link }}" target="_blank" rel="noopener">{{ val }}</a>
+            {% else %}
+            {{ val if val is not none else "" }}
+            {% endif %}
+          </td>
+          {% endif %}
           {% endfor %}
         </tr>
         {% endfor %}

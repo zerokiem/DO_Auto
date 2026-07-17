@@ -53,8 +53,12 @@
 
   <div class="run-controls">
     <label class="switch">
-      <input type="checkbox" id="headless-toggle" checked>
+      <input type="checkbox" id="headless-toggle" checked {{ 'disabled' if not is_windows else '' }}>
+      {% if is_windows %}
       <span>Chạy ẩn (không hiện cửa sổ Chromium)</span>
+      {% else %}
+      <span>Luôn chạy ẩn (server đang chạy trên NAS/Linux - không có màn hình để hiện cửa sổ Chromium)</span>
+      {% endif %}
     </label>
     <label class="switch">
       <input type="checkbox" id="test-mode-toggle">

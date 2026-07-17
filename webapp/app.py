@@ -94,6 +94,7 @@ def dashboard():
         status=run_manager.status(),
         login_status=login_manager.status(),
         excel_file=str(effective_cfg.EXCEL_FILE),
+        is_windows=sys.platform == "win32",
     )
 
 
@@ -101,7 +102,10 @@ def dashboard():
 def api_run():
     payload = request.get_json(force=True, silent=True) or {}
     task_keys = payload.get("task_keys") or []
-    headless = bool(payload.get("headless", True))
+    # Tren Linux/Docker (NAS) khong co man hinh de hien Chromium - ep headless=True
+    # bat ke gia tri tich chon tren web, tranh loi/crash khi mo trinh duyet
+    # "khong an" trong 1 container khong co display server.
+    headless = True if sys.platform != "win32" else bool(payload.get("headless", True))
     test_mode = bool(payload.get("test_mode", False))
 
     effective_cfg = settings_store.build_effective_config(base_config)
@@ -222,9 +226,9 @@ def excel_page():
     if not sheet or sheet not in sheet_names:
         sheet = sheet_names[0] if sheet_names else None
 
-    # So dong hien thi: tham so ?limit= (so nguyen hoac "all"). Mac dinh 300.
-    limit_options = [50, 100, 200, 300, 500, 1000]
-    limit_arg = (request.args.get("limit") or "300").strip().lower()
+    # So dong hien thi: tham so ?limit= (so nguyen hoac "all"). Mac dinh 50.
+    limit_options = [20, 50, 100, 200, 300, 500]
+    limit_arg = (request.args.get("limit") or "50").strip().lower()
     if limit_arg in ("all", "0", "tatca", "tat_ca"):
         limit_arg = "all"
         limit = None
@@ -233,14 +237,30 @@ def excel_page():
             limit = max(1, int(limit_arg))
             limit_arg = str(limit)
         except ValueError:
-            limit, limit_arg = 300, "300"
+            limit, limit_arg = 50, "50"
 
     columns, rows, error, total = [], [], None, 0
+    file_links = []
     if sheet:
         try:
             columns, rows, total = _read_sheet_preview(effective_cfg.EXCEL_FILE, sheet, limit=limit)
         except Exception as e:
             error = str(e)
+
+    # Xay LAI link cho cot "Ten file luu" ngay tu Thu muc luu + Ten file luu +
+    # DISPLAY_BASE_URL hien tai (khong doc hyperlink da luu san trong file - che
+    # do read_only cua openpyxl khong ho tro doc .hyperlink), de link tren web
+    # luon dung theo cau hinh moi nhat kem ca voi du lieu vua sua qua migration.
+    if columns and "Thư mục lưu" in columns and "Tên file lưu" in columns:
+        folder_idx = columns.index("Thư mục lưu")
+        file_idx = columns.index("Tên file lưu")
+        for row in rows:
+            fname = str(row[file_idx] or "").strip()
+            if not fname:
+                file_links.append(None)
+                continue
+            folder = str(row[folder_idx] or "")
+            file_links.append(excel_log.build_file_link(folder, fname, effective_cfg.DISPLAY_BASE_URL))
 
     return render_template(
         "excel_view.html",
@@ -248,8 +268,8 @@ def excel_page():
         active_sheet=sheet,
         columns=columns,
         rows=rows,
+        file_links=file_links,
         error=error,
-        excel_file=str(effective_cfg.EXCEL_FILE),
         row_count=len(rows),
         total_count=total,
         limit_options=limit_options,
