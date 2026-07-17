@@ -1,5 +1,3 @@
-```gitignore
-
 # --- Các file screenshot ---
 *.png
 **/screenshot/
@@ -17,10 +15,13 @@
 # --- Các file environment ---
 **/.venv/
 
+# --- Cấu hình riêng từng máy (Docker) + dữ liệu mặc định ---
+.env
+/data/
+
 # --- VSCode ---
 .vscode/*.log
 
 # --- Hệ điều hành ---
 Thumbs.db
 .DS_Store
-```

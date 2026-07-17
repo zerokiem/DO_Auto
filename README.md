@@ -35,6 +35,48 @@ Excel cũ và PDF cũ vẫn dùng bình thường; có script hỗ trợ gộp E
 
 ---
 
+## Cài đặt nhanh (1 lệnh)
+
+Có 2 kiểu máy, chọn đúng kiểu của bạn:
+
+### A. Máy CÓ Docker (NAS Synology, Raspberry Pi, WSL2, Docker Desktop, Linux)
+
+```bash
+git clone https://github.com/zerokiem/DO_Auto.git
+cd DO_Auto
+cp .env.example .env      # mở .env sửa nếu cần (xem chú thích sẵn trong file)
+docker compose up -d      # NAS Synology dùng: sudo docker-compose up -d
+```
+
+Xong, mở `http://<địa-chỉ-máy>:8877`. Dữ liệu (PDF/Excel) mặc định lưu ở thư mục
+`./data` ngay trong repo; muốn lưu chỗ khác thì sửa `DOFFICE_DATA_HOST` trong
+`.env`. Cập nhật code sau này: `git pull` rồi `docker compose restart`.
+Chi tiết riêng cho NAS Synology (quyền Docker, tự chạy 24/7): xem
+[`README_NAS.md`](README_NAS.md).
+
+### B. Máy Windows KHÔNG có Docker
+
+```powershell
+git clone https://github.com/zerokiem/DO_Auto.git
+cd DO_Auto
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+`install.ps1` tự tạo môi trường ảo, cài thư viện + trình duyệt Chromium. Xong nó
+in ra 2 bước tiếp (đăng nhập DOffice 1 lần rồi `python run_web.py`). Yêu cầu duy
+nhất: đã cài **Python 3.10+** (nhớ tick *Add to PATH* khi cài Python).
+
+### Bước bắt buộc 1 lần: đăng nhập DOffice (`state.json`)
+
+Dù cài kiểu nào, DOffice cần 1 phiên đăng nhập đã lưu (`playwright/.auth/state.json`).
+Việc đăng nhập phải mở trình duyệt thật + gõ tài khoản/mật khẩu, nên **làm trên
+một máy có màn hình** (bất kỳ máy Windows nào chạy `python login_save_state.py`),
+rồi **copy file `playwright/.auth/state.json` vào cùng vị trí** trên máy chạy
+server (kể cả NAS/Pi không có màn hình). Đây là thao tác tay duy nhất không tự
+động hoá được, và chỉ làm lại khi phiên hết hạn hoặc đổi mật khẩu.
+
+---
+
 ## 0. Cấu trúc bộ file
 
 ```text

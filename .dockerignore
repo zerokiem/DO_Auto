@@ -11,3 +11,8 @@ debug_*.png
 node_modules/
 # Khong gui browser Playwright cu (image da co san Chromium)
 ms-playwright/
+# Cau hinh rieng may + du lieu mac dinh (khong can trong build context)
+.env
+/data/
+# Phien dang nhap DOffice - tuyet doi khong dua vao image
+**/.auth/

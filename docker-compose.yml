@@ -1,8 +1,15 @@
-# DOffice Auto - Project cho Container Manager (DSM 7.2) tren DS423.
+# DOffice Auto - chay tren BAT KY may nao co Docker: NAS Synology, Raspberry Pi,
+# WSL2, Docker Desktop (Windows/Mac), may chu Linux...
 #
-# TRUOC KHI DUNG, sua lai 2 duong dan mount ben duoi cho khop may ban:
-#   - Dong "code":     /volume1/homes/binhnx/Working/Programming/DO_Auto  (noi ban dat code)
-#   - Dong "du lieu":  /volume1/homes/binhnx/Working/Van_ban             (noi luu PDF/Excel/log)
+# CAI DAT 1 LENH:
+#   git clone https://github.com/zerokiem/DO_Auto.git
+#   cd DO_Auto
+#   cp .env.example .env      # sua neu can (xem chu thich trong .env.example)
+#   docker compose up -d      # tren NAS Synology: sudo docker-compose up -d
+#
+# Cac gia tri RIENG cho tung may (duong dan du lieu, o dia hien thi, IP...) doc
+# tu file .env cung thu muc. KHONG sua truc tiep file nay -> lan `git pull` sau
+# khong bi xung dot/mat cau hinh rieng.
 services:
   doffice:
     build: .
@@ -10,22 +17,24 @@ services:
     container_name: doffice
     restart: unless-stopped
     ports:
-      - "8877:8877"
+      - "${DOFFICE_PORT:-8877}:8877"
     environment:
+      # Trong container, du lieu luon o /data (khong doi). Doi cho luu THAT tren
+      # may chu bang DOFFICE_DATA_HOST trong .env, khong phai bien nay.
       - DOFFICE_DATA_DIR=/data
-      # Duong dan hien thi trong Excel/web de bam mo file tren may Windows. Tren
-      # cac may cua ban, thu muc du lieu NAS (/volume1/homes/binhnx/Working/Van_ban)
-      # duoc map vao o S: -> S:\Working\Van_ban. Sua lai neu may ban map o dia khac.
-      - 'DOFFICE_DISPLAY_DIR=S:\Working\Van_ban'
-      # Hyperlink ten file trong Excel tro toi NAS qua web (dia chi Tailscale co
-      # dinh) de bam mo duoc tren dien thoai co Tailscale. Doi IP/cong neu khac.
-      - 'DOFFICE_DISPLAY_URL=http://100.100.1.254:8877/vb'
-      - TZ=Asia/Ho_Chi_Minh
+      # (Tuy chon) duong dan hien thi trong Excel + link mo file - xem .env.example.
+      - DOFFICE_DISPLAY_DIR=${DOFFICE_DISPLAY_DIR:-}
+      - DOFFICE_DISPLAY_URL=${DOFFICE_DISPLAY_URL:-}
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:
-      # Code (chua config.py, do_auto/, webapp/, playwright/.auth/state.json ...)
-      - /volume1/homes/binhnx/Working/Programming/DO_Auto:/app
-      # Thu muc luu ket qua: PDF, Tong_hop_DOffice.xlsx, logs, history.sqlite3
-      - /volume1/homes/binhnx/Working/Van_ban:/data
+      # Code = chinh thu muc repo nay (chua config.py, do_auto/, webapp/, va
+      # playwright/.auth/state.json sau khi dang nhap). Sua code xong chi can
+      # `restart`, khong build lai image.
+      - .:/app
+      # Du lieu: PDF, Tong_hop_DOffice.xlsx, logs, history.sqlite3. Mac dinh
+      # ./data ngay trong repo (tu tao khi chay lan dau). Doi qua DOFFICE_DATA_HOST
+      # trong .env de luu cho khac (vd tren NAS: /volume1/homes/<ban>/.../Van_ban).
+      - ${DOFFICE_DATA_HOST:-./data}:/data
     # /dev/shm nho trong container; da bat --disable-dev-shm-usage cho Chromium
-    # nen 256m la du. Tang len neu gap loi tab crash.
+    # nen 256m la du. Tang len (vd "512mb") neu gap loi tab Chromium crash.
     shm_size: "256mb"
