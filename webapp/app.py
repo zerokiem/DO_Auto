@@ -40,6 +40,14 @@ def _ordered_tasks(cfg):
     return sorted(cfg.TASKS.items(), key=lambda kv: kv[1].sheet_order)
 
 
+def _can_login_interactively() -> bool:
+    """True neu may nay co man hinh that de mo cua so Chromium (Windows, hoac
+    Linux co bien DISPLAY) - quyet dinh dung luong dang nhap tuong tac hay
+    headless (form username/password). Dung chung cho settings_page() va
+    api_login_start() de khong bao gio lech logic giua 2 noi."""
+    return (sys.platform == "win32") or bool(os.environ.get("DISPLAY"))
+
+
 def _auth_state_info(cfg) -> dict:
     p = Path(cfg.AUTH_STATE)
     if not p.exists():
@@ -162,7 +170,17 @@ def api_logs_stream():
 
 @app.post("/api/login/start")
 def api_login_start():
-    started = login_manager.start()
+    username = password = None
+    if not _can_login_interactively():
+        # May khong man hinh (NAS/Docker/Pi): BAT BUOC phai co username/password
+        # tu form web de dang nhap headless - khong the mo cua so that.
+        payload = request.get_json(force=True, silent=True) or {}
+        username = (payload.get("username") or "").strip()
+        password = payload.get("password") or ""
+        if not username or not password:
+            return jsonify({"started": False, "error": "Thiếu tài khoản hoặc mật khẩu."}), 400
+
+    started = login_manager.start(username=username, password=password)
     if not started:
         return jsonify({"started": False, "error": "Đang có 1 lượt đăng nhập khác đang mở."}), 409
     return jsonify({"started": True})
@@ -389,7 +407,7 @@ def settings_page():
         # Nut "Dang nhap lai" can mo Chromium THAT tren may dang chay server
         # nay - tren Linux/Docker (NAS/Pi) khong co man hinh (DISPLAY) se luon
         # loi, xem do_auto/login_flow.py. Bao truoc thay vi de bam xong moi biet.
-        can_login_here=(sys.platform == "win32") or bool(os.environ.get("DISPLAY")),
+        can_login_here=_can_login_interactively(),
     )
 
 

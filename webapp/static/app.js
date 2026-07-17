@@ -174,21 +174,43 @@
   }
 
   async function startLogin() {
+    // May khong man hinh (NAS/Docker) hien them 2 o nay - xem settings.html.
+    // Neu co mat, day la dang nhap headless: bat buoc phai co username/password.
+    const usernameEl = document.getElementById("doffice_username");
+    const passwordEl = document.getElementById("doffice_password");
+    const isHeadlessForm = !!(usernameEl && passwordEl);
+
+    let fetchOptions = { method: "POST" };
+    if (isHeadlessForm) {
+      const username = usernameEl.value.trim();
+      const password = passwordEl.value;
+      if (!username || !password) {
+        alert("Điền tài khoản và mật khẩu trước khi bấm Đăng nhập.");
+        return;
+      }
+      fetchOptions.headers = { "Content-Type": "application/json" };
+      fetchOptions.body = JSON.stringify({ username, password });
+    }
+
     setLoginStartButtonBusy(true);
     let res, data;
     try {
-      res = await fetch("/api/login/start", { method: "POST" });
+      res = await fetch("/api/login/start", fetchOptions);
       data = await res.json();
     } catch (e) {
       setLoginStartButtonBusy(false);
       return;
+    } finally {
+      // Xoa mat khau khoi form ngay sau khi gui, du thanh cong hay khong -
+      // khong de nam lai tren man hinh/DOM lau hon can thiet.
+      if (passwordEl) passwordEl.value = "";
     }
     if (!data.started) {
       setLoginStartButtonBusy(false);
       alert(data.error || "Không mở được cửa sổ đăng nhập.");
       return;
     }
-    setLoginBoxVisible(true, "Đang mở cửa sổ đăng nhập trên máy chủ...");
+    setLoginBoxVisible(true, isHeadlessForm ? "Đang đăng nhập..." : "Đang mở cửa sổ đăng nhập trên máy chủ...");
     pollLoginStatus();
   }
 
