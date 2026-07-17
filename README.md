@@ -35,45 +35,62 @@ Excel cũ và PDF cũ vẫn dùng bình thường; có script hỗ trợ gộp E
 
 ---
 
-## Cài đặt nhanh (1 lệnh)
+## Cài đặt nhanh
 
-Có 2 kiểu máy, chọn đúng kiểu của bạn:
+Repo này đang **private**, không public trên GitHub - bộ code được gửi trực
+tiếp dưới dạng **1 file `.zip`** (qua email/Zalo...) thay vì `git clone`. Có 2
+kiểu máy, chọn đúng kiểu của bạn:
 
-### A. Máy CÓ Docker (NAS Synology, Raspberry Pi, WSL2, Docker Desktop, Linux)
+### A. Máy Windows (đa số trường hợp - không cần cài Docker)
 
-```bash
-git clone https://github.com/zerokiem/DO_Auto.git
-cd DO_Auto
-cp .env.example .env      # mở .env sửa nếu cần (xem chú thích sẵn trong file)
-docker compose up -d      # NAS Synology dùng: sudo docker-compose up -d
-```
+1. Giải nén file `.zip` đã nhận được vào 1 thư mục bất kỳ (ví dụ `D:\DO_Auto`).
+2. Mở PowerShell tại thư mục đó (Shift + chuột phải trong File Explorer &rarr;
+   "Open PowerShell window here"), rồi chạy:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\install.ps1
+   ```
+
+`install.ps1` tự tạo môi trường ảo, cài thư viện + trình duyệt Chromium (mất
+vài phút, cần internet). Xong nó in ra các bước tiếp theo (đăng nhập DOffice 1
+lần rồi `python run_web.py`). Yêu cầu duy nhất: máy đã cài sẵn **Python 3.10+**
+([tải tại đây](https://www.python.org/downloads/), nhớ tick **Add python.exe
+to PATH** lúc cài) - không cần cài Git, không cần Docker.
+
+*(Nếu bạn có quyền truy cập repo GitHub riêng - ví dụ dùng chung với người viết
+tool - có thể `git clone` thay vì giải nén zip, hai cách cho kết quả giống hệt
+nhau.)*
+
+### B. Máy CÓ Docker (NAS Synology, Raspberry Pi, WSL2, Docker Desktop, Linux)
+
+Dùng khi muốn chạy 24/7 không cần mở máy tính (xem thêm
+[`README_NAS.md`](README_NAS.md) cho chi tiết Synology).
+
+1. Giải nén file `.zip` vào 1 thư mục trên máy/NAS đó.
+2. Trong thư mục đó:
+   ```bash
+   cp .env.example .env      # mở .env sửa nếu cần (xem chú thích sẵn trong file)
+   docker compose up -d      # NAS Synology dùng: sudo docker-compose up -d
+   ```
 
 Xong, mở `http://<địa-chỉ-máy>:8877`. Dữ liệu (PDF/Excel) mặc định lưu ở thư mục
-`./data` ngay trong repo; muốn lưu chỗ khác thì sửa `DOFFICE_DATA_HOST` trong
-`.env`. Cập nhật code sau này: `git pull` rồi `docker compose restart`.
-Chi tiết riêng cho NAS Synology (quyền Docker, tự chạy 24/7): xem
-[`README_NAS.md`](README_NAS.md).
-
-### B. Máy Windows KHÔNG có Docker
-
-```powershell
-git clone https://github.com/zerokiem/DO_Auto.git
-cd DO_Auto
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-```
-
-`install.ps1` tự tạo môi trường ảo, cài thư viện + trình duyệt Chromium. Xong nó
-in ra 2 bước tiếp (đăng nhập DOffice 1 lần rồi `python run_web.py`). Yêu cầu duy
-nhất: đã cài **Python 3.10+** (nhớ tick *Add to PATH* khi cài Python).
+`./data` ngay cạnh code; muốn lưu chỗ khác thì sửa `DOFFICE_DATA_HOST` trong
+`.env`. Cập nhật code sau này: chép đè bản `.zip` mới rồi `docker compose restart`.
 
 ### Bước bắt buộc 1 lần: đăng nhập DOffice (`state.json`)
 
 Dù cài kiểu nào, DOffice cần 1 phiên đăng nhập đã lưu (`playwright/.auth/state.json`).
-Việc đăng nhập phải mở trình duyệt thật + gõ tài khoản/mật khẩu, nên **làm trên
-một máy có màn hình** (bất kỳ máy Windows nào chạy `python login_save_state.py`),
-rồi **copy file `playwright/.auth/state.json` vào cùng vị trí** trên máy chạy
-server (kể cả NAS/Pi không có màn hình). Đây là thao tác tay duy nhất không tự
-động hoá được, và chỉ làm lại khi phiên hết hạn hoặc đổi mật khẩu.
+
+- **Máy có màn hình** (đa số trường hợp - Windows theo Cách A ở trên): vào tab
+  **Cài đặt** trên web dashboard, bấm **"Đăng nhập lại"** - cửa sổ Chromium mở
+  ngay trên máy đó để đăng nhập tay, xong bấm "Tôi đã đăng nhập xong" là lưu
+  phiên tự động. Hoặc chạy `python login_save_state.py` nếu thích dòng lệnh.
+- **Máy không màn hình** (NAS/Pi theo Cách B): vào tab **Cài đặt**, cùng chỗ đó
+  sẽ hiện 2 ô **Tài khoản/Mật khẩu DOffice** - điền vào rồi bấm "Đăng nhập",
+  server tự động đăng nhập giúp (chỉ hoạt động nếu trang đăng nhập DOffice là
+  form tài khoản/mật khẩu đơn giản, không CAPTCHA/OTP - hiện đúng như vậy).
+  Mật khẩu chỉ dùng đúng 1 lần lúc đó, không lưu lại ở bất kỳ đâu. Nếu cách này
+  không chạy được (trang DOffice đổi giao diện...), vẫn có thể đăng nhập trên 1
+  máy Windows khác rồi copy file `playwright/.auth/state.json` sang.
 
 ---
 
@@ -82,6 +99,7 @@ server (kể cả NAS/Pi không có màn hình). Đây là thao tác tay duy nh�
 ```text
 DO_Auto/
 │
+├─ install.ps1                        # Cài đặt 1 lệnh trên Windows (tạo venv, cài thư viện + Chromium)
 ├─ config.py                          # NGUỒN CẤU HÌNH DUY NHẤT - sửa tay hoặc qua web Cài đặt đều ghi vào đây
 ├─ run_doffice.py                     # Chạy chương trình bằng CLI/PowerShell
 ├─ run_web.py                         # Chạy bảng điều khiển web (mục 7)
@@ -92,12 +110,13 @@ DO_Auto/
 ├─ run_all_doffice.ps1                # Chạy tất cả tác vụ, dùng thủ công hoặc Task Scheduler
 ├─ create_doffice_task_examples.ps1   # Tạo lịch chạy tự động bằng PowerShell (thay thế: web /scheduler)
 ├─ install_web_startup.ps1            # Cài web dashboard tự chạy khi đăng nhập Windows (mục 7.8)
-├─ README.md
+├─ Dockerfile, docker-compose.yml, .env.example, docker/  # Chạy qua Docker (NAS/Pi/WSL2...) - xem README_NAS.md
+├─ README.md, README_NAS.md
 │
 ├─ do_auto/                           # Package chứa logic dùng chung, thường KHÔNG cần đụng vào
 │  ├─ __init__.py
 │  ├─ task_types.py                   # Cấu trúc 1 "tác vụ" (TaskConfig)
-│  ├─ text_utils.py                   # Dọn text, đặt tên file, parse khối chỉ đạo
+│  ├─ text_utils.py                   # Dọn text, đặt tên file, parse khối chỉ đạo, ép UTF-8 console (Windows)
 │  ├─ excel_log.py                    # Ghi Excel gộp nhiều sheet, độ rộng cột dùng chung cho web
 │  ├─ browser_nav.py                  # Đăng nhập, chọn vai trò, điều hướng menu
 │  ├─ extract.py                      # Trích dữ liệu từ 1 dòng văn bản
@@ -107,8 +126,9 @@ DO_Auto/
 │  ├─ history.py                      # Ghi/đọc lịch sử chạy (SQLite) - CLI, Scheduled Task, web dùng chung
 │  ├─ notify.py                       # Gửi tin nhắn tổng kết qua Telegram sau mỗi phiên chạy (mục 15)
 │  ├─ settings_store.py               # Đọc/ghi trực tiếp config.py cho trang Cài đặt trên web
-│  ├─ login_flow.py                   # Đăng nhập DOffice điều khiển được từ web (nút "Đăng nhập lại")
-│  ├─ scheduler.py                    # Quản lý 1 Windows Scheduled Task nhiều trigger (trang "Lịch chạy")
+│  ├─ login_flow.py                   # Đăng nhập DOffice tự web: tương tác (Windows) hoặc headless (NAS/Pi)
+│  ├─ scheduler.py                    # Quản lý lịch chạy tự động - tự chọn Windows Task/thread nền (Linux)
+│  ├─ inprocess_scheduler.py          # Lịch chạy tự động khi chạy Docker/Linux (thread nền, không dùng cron)
 │  └─ runner.py                       # Vòng lặp xử lý + điều phối nhiều tác vụ + tạo log file mỗi lần chạy
 │
 └─ webapp/                            # Bảng điều khiển web (Flask), xem mục 7
@@ -365,6 +385,9 @@ liên tục kể cả khi không mở terminal, xem mục 7.8.
   server và muốn quan sát/debug trực tiếp như khi chạy CLI.
 - **Quan trọng**: cửa sổ Chromium (nếu chọn hiện) luôn mở trên **máy đang chạy
   `run_web.py`**, không phải máy bạn đang mở trình duyệt xem dashboard.
+- **Chạy trên NAS/Docker/Pi (không có màn hình)**: ô "Chạy ẩn" bị khoá cố định
+  ở trạng thái bật (server tự ép headless=True bất kể có tick hay không), vì
+  máy đó không có màn hình để hiện cửa sổ - tránh lỗi/crash nếu lỡ bỏ tick.
 
 ### 7.3 Nhật ký trực tiếp + trang Lịch sử
 
@@ -386,13 +409,16 @@ ngay trên web, không cần mở thư mục `LOGS_DIR` bằng tay.
 
 ### 7.4 Trang Excel (`/excel`)
 
-Xem trực tiếp dữ liệu 3 sheet (300 dòng gần nhất mỗi sheet, mới nhất ở trên),
-có ô tìm kiếm lọc theo bất kỳ cột nào, và nút **Tải file Excel** để tải nguyên
-file `.xlsx` về xem đầy đủ/chỉnh sửa. Độ rộng từng cột trên web **dùng đúng số
-liệu độ rộng cột đã đặt cho file Excel** (`do_auto/excel_log.py`, biến
-`COLUMN_WIDTHS` – 1 nguồn duy nhất cho cả Excel lẫn web, không bị lệch), nên
-cột "Trích yếu"/"Tên file lưu" đủ rộng để đọc thay vì bị bóp hẹp lại; bảng có
-thể cuộn ngang nếu màn hình hẹp hơn tổng độ rộng các cột.
+Xem trực tiếp dữ liệu 3 sheet (mặc định 50 dòng gần nhất mỗi sheet, mới nhất ở
+trên - chọn lại 20/50/100/200/300/500 dòng hoặc "Tất cả" bằng dropdown), có ô
+tìm kiếm lọc theo bất kỳ cột nào, và nút **Tải file Excel** để tải nguyên file
+`.xlsx` về xem đầy đủ/chỉnh sửa. Bảng có khung cuộn riêng (không cuộn theo cả
+trang) với hàng tiêu đề dính ở trên. Cột "Tên file lưu" là **link bấm mở được
+trực tiếp** (dùng cấu hình "Đường dẫn hiển thị / Link mở file" ở mục 7.5 bên
+dưới). Độ rộng từng cột trên web **dùng đúng số liệu độ rộng cột đã đặt cho
+file Excel** (`do_auto/excel_log.py`, biến `COLUMN_WIDTHS` – 1 nguồn duy nhất
+cho cả Excel lẫn web, không bị lệch); bảng có thể cuộn ngang nếu màn hình hẹp
+hơn tổng độ rộng các cột.
 
 ### 7.5 Trang Cài đặt (`/settings`)
 
@@ -401,6 +427,14 @@ Chỉnh nhanh các mục hay đổi nhất **mà không cần mở code**:
 - Chung: dừng khi gặp trùng, khoá kiểm tra trùng, tốc độ thao tác trình duyệt.
 - Từng tác vụ: bật/tắt, **vai trò (role_pattern)**, số văn bản tối đa, có tải
   PDF không, có bấm Kết thúc không, có hỏi xác nhận trước khi Kết thúc không.
+- **Đường dẫn hiển thị / Link mở file**: điền đường dẫn ổ đĩa (vd `S:\...` nếu
+  chạy Docker/NAS và máy bạn map ổ đó) để cột "Thư mục lưu" trong Excel bấm mở
+  được trên Windows; và/hoặc 1 URL web (vd qua Tailscale) để hyperlink cột "Tên
+  file lưu" mở được cả trên điện thoại, không phụ thuộc ổ đĩa map. Để trống thì
+  dùng mặc định (đường dẫn thật / link `file://`).
+- **Phiên đăng nhập DOffice**: xem mục "Bước bắt buộc 1 lần" ở đầu file này -
+  máy có màn hình thì bấm nút mở Chromium thật; máy không màn hình (NAS/Pi)
+  thì điền form tài khoản/mật khẩu ngay tại đây.
 
 **Lưu sẽ ghi TRỰC TIẾP vào `config.py`** (thay thế đúng dòng cần đổi bằng biểu
 thức tìm-thay-thế có mục tiêu, giữ nguyên mọi comment/định dạng khác trong
@@ -414,18 +448,22 @@ tác vụ, không đưa lên form web.
 ### 7.6 Trang Lịch chạy (`/scheduler`)
 
 Đặt lịch chạy tự động (tác vụ "Tất cả") mà không cần sửa PowerShell tay: chọn
-tối đa 2 thời điểm trong ngày, bấm **Lưu**. Hệ thống sẽ xoá lịch cũ (nếu có) và
-tạo lại **1 Windows Scheduled Task duy nhất** tên `DOffice Auto Schedule`, gắn
-**nhiều trigger lên cùng 1 task** (đúng như bạn ghi chú: 1 task có thể có
-nhiều thời điểm kích hoạt, không cần tạo nhiều task riêng lẻ). Để trống cả 2 ô
-rồi Lưu sẽ xoá lịch chạy tự động.
+tối đa **3 thời điểm** trong ngày, bấm **Lưu**. Để trống cả 3 ô rồi Lưu sẽ xoá
+lịch chạy tự động. Cơ chế lưu lịch **tự chọn theo môi trường đang chạy**
+(`do_auto/scheduler.py`), trang sẽ hiện đúng banner cho biết đang dùng cách nào:
 
-Trang này gọi PowerShell (`Register-ScheduledTask`/`Unregister-ScheduledTask`)
-qua `do_auto/scheduler.py`, nên **chỉ hoạt động trên Windows**. Nếu gặp lỗi
-quyền truy cập khi lưu, thử chạy `python run_web.py` với quyền Administrator.
-Muốn đặt lịch bằng tay thay vì qua web, `create_doffice_task_examples.ps1`
-vẫn dùng được (tạo cùng 1 task tên giống hệt, nên web và PowerShell không xung
-đột nhau, có thể dùng cách nào tiện hơn).
+- **Windows**: xoá lịch cũ (nếu có) và tạo lại **1 Windows Scheduled Task duy
+  nhất** tên `DOffice Auto Schedule`, gắn nhiều trigger lên cùng 1 task (1 task
+  có thể có nhiều thời điểm kích hoạt, không cần tạo nhiều task riêng lẻ). Việc
+  này gọi PowerShell (`Register-ScheduledTask`) - nếu gặp lỗi quyền truy cập
+  khi lưu, thử chạy `python run_web.py` với quyền Administrator. Muốn đặt lịch
+  bằng tay thay vì qua web, `create_doffice_task_examples.ps1` vẫn dùng được
+  (tạo cùng 1 task tên giống hệt, nên web và PowerShell không xung đột nhau).
+- **NAS/Docker/Linux**: không dùng Windows Task Scheduler (không có) cũng
+  không dùng cron - lưu giờ vào file `schedule_times.txt` trong thư mục code,
+  1 thread nền ngay trong tiến trình web (`do_auto/inprocess_scheduler.py`) tự
+  kiểm tra mỗi 20 giây. Chạy được liên tục miễn container còn hoạt động
+  (`restart: unless-stopped`), không cần dashboard đang mở trình duyệt xem.
 
 ### 7.7 Đăng nhập lại từ web
 
@@ -599,7 +637,8 @@ Gợi ý cấu hình theo chế độ (giống bản cũ):
 | Bấm "Chạy" trên web nhưng không thấy cửa sổ Chromium đâu | Đang bật "Chạy ẩn (headless)" – tắt tick đó nếu muốn thấy cửa sổ, hoặc xem log trực tiếp trong khung Nhật ký thay vì nhìn cửa sổ |
 | 2 người cùng bấm "Chạy" trên web cùng lúc | Web chỉ cho 1 lượt chạy hoạt động tại 1 thời điểm (giống lock file của `run_all_doffice.ps1`); lượt sau sẽ báo lỗi "Đang có 1 lượt chạy khác" |
 | Lưu Cài đặt trên web báo lỗi "Không lưu được" | Đóng mọi chương trình đang mở `config.py` (vd VSCode có thể khoá file trên 1 số hệ thống); kiểm tra thông báo lỗi chi tiết hiển thị trên trang |
-| Trang "Lịch chạy" báo lỗi khi Lưu | Tính năng này chỉ chạy trên Windows (gọi PowerShell); nếu đúng đang ở Windows mà vẫn lỗi, thử chạy `python run_web.py` với quyền Administrator |
+| Trang "Lịch chạy" báo lỗi khi Lưu | Trên Windows: tính năng gọi PowerShell (`Register-ScheduledTask`) - thử chạy `python run_web.py` với quyền Administrator. Trên NAS/Docker: kiểm tra thư mục code có ghi được file `schedule_times.txt` không |
+| Đăng nhập headless (NAS/Pi) báo "không tìm thấy ô tài khoản/mật khẩu" | DOffice có thể đã đổi giao diện trang đăng nhập - xem `do_auto/login_flow.py` (các selector đang dùng) hoặc quay lại đăng nhập trên máy Windows rồi copy `state.json` |
 
 ---
 
@@ -703,16 +742,16 @@ Ghi chú thẳng thắn để bạn không bất ngờ khi dùng:
   trong tiến trình Flask), không có hàng đợi (queue) nhiều lượt chạy nối tiếp
   nhau. Luồng "Đăng nhập lại" dùng khoá riêng, không tranh chấp với luồng chạy
   tác vụ (2 việc có thể diễn ra cùng lúc nếu thật sự cần, dù hiếm khi cần thiết).
-- **`Flask dev server`** (`app.run(...)`) dùng để đơn giản hoá triển khai –
-  không cần Nginx/Gunicorn/Docker vì Playwright cần chạy trực tiếp trên máy có
-  Chromium, không hợp để container hoá như dự án tra cứu hoá đơn điện tử của
-  bạn. Với quy mô dùng nội bộ 1-vài người, server này đủ ổn định; nếu cần chắc
-  chắn hơn, có thể thay bằng `waitress-serve webapp.app:app --port=8877`.
+- **`Flask dev server`** (`app.run(...)`) dùng để đơn giản hoá triển khai. Với
+  quy mô dùng nội bộ 1-vài người, server này đủ ổn định; nếu cần chắc chắn hơn,
+  có thể thay bằng `waitress-serve webapp.app:app --port=8877`.
 - **Nhật ký trực tiếp dùng chung `sys.stdout`** cho cả tiến trình trong lúc
   đang chạy 1 tác vụ – vì chỉ cho phép 1 lượt chạy cùng lúc nên không có
   nguy cơ trộn log giữa 2 lượt chạy khác nhau, nhưng nếu bạn tự thêm code
   `print()` ở nơi khác trong lúc đang chạy, dòng đó cũng sẽ lọt vào khung
   Nhật ký và vào file log của lần chạy đó.
-- **Trang "Lịch chạy" chỉ hoạt động trên Windows** (gọi PowerShell/Task
-  Scheduler qua subprocess) – không dùng được nếu thử chạy dashboard trên máy
-  không phải Windows.
+- **Đăng nhập headless (NAS/Pi) chỉ chạy được nếu DOffice vẫn dùng form
+  tài khoản/mật khẩu đơn giản** (không CAPTCHA/OTP/SSO redirect) - nếu DOffice
+  đổi sang xác thực nhiều lớp, cách này sẽ báo lỗi rõ ràng và bạn cần quay lại
+  đăng nhập trên máy Windows rồi copy `state.json` (xem mục "Bước bắt buộc 1
+  lần" ở đầu file).
