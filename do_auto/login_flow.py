@@ -66,11 +66,15 @@ def run_interactive_login(cfg, ready_event: threading.Event, on_log: Callable[[s
         browser.close()
 
 
-# Cac selector THU LAN LUOT de tim o "tai khoan/username" - DOffice khong co
-# HTML co dinh nen phai do nhieu kieu pho bien thay vi 1 selector duy nhat. O
-# "mat khau" thi dung input[type=password] - hau nhu moi trang web deu dung
-# dung type nay nen khong can doan.
+# Trang dang nhap DOffice dung Angular Material - o input KHONG co thuoc tinh
+# type="text" tuong minh (Angular chi de trong, trinh duyet mac dinh hieu la
+# text) nen selector CSS "input[type=text]" KHONG khop duoc, phai them fallback
+# ":not([type=password])..." o cuoi. #mat-input-0/#mat-input-1 la ID DOffice
+# THUC TE (xac nhan tren may that) - Angular Material tu danh so tuan tu cac o
+# input tren trang, o dang nhap la 2 o dau tien nen on dinh, nhung van de cac
+# selector chung phia sau phong khi DOffice doi giao dien.
 _USERNAME_SELECTOR_CANDIDATES = [
+    "#mat-input-0",  # DOffice hien tai (Angular Material, o dau tien tren form dang nhap)
     'input[autocomplete="username"]',
     'input[type="email"]',
     'input[name*="user" i]',
@@ -81,13 +85,28 @@ _USERNAME_SELECTOR_CANDIDATES = [
     'input[placeholder*="tên đăng nhập" i]',
     'input[placeholder*="username" i]',
     'input[type="text"]',
+    # Fallback cuoi: bat ky input nao KHONG PHAI password/hidden/checkbox/radio/
+    # submit/button - bat truong hop nhu DOffice khong set type="text" tuong minh.
+    'input:not([type="password"]):not([type="hidden"]):not([type="checkbox"])'
+    ':not([type="radio"]):not([type="submit"]):not([type="button"])',
+]
+
+_PASSWORD_SELECTOR_CANDIDATES = [
+    "#mat-input-1",  # DOffice hien tai
+    'input[type="password"]',
+]
+
+_SUBMIT_SELECTOR_CANDIDATES = [
+    "#login-form-wrapper > form > button",  # DOffice hien tai
+    'button[type="submit"]',
+    "input[type=\"submit\"]",
 ]
 
 
-def _find_username_field(page):
-    """Thu lan luot cac kieu selector pho bien de tim o nhap tai khoan. Tra ve
-    locator dau tien VISIBLE tim duoc, hoac None neu khong tim duoc kieu nao."""
-    for selector in _USERNAME_SELECTOR_CANDIDATES:
+def _first_visible(page, selectors):
+    """Thu lan luot 1 danh sach selector, tra ve locator dau tien VISIBLE tim
+    duoc, hoac None neu khong tim duoc kieu nao."""
+    for selector in selectors:
         try:
             loc = page.locator(selector).first
             if loc.count() > 0 and loc.is_visible():
@@ -119,7 +138,7 @@ def run_headless_login(
 
             on_log("Đang tìm ô đăng nhập...")
             try:
-                password_field = page.locator('input[type="password"]').first
+                password_field = page.locator(", ".join(_PASSWORD_SELECTOR_CANDIDATES)).first
                 password_field.wait_for(state="visible", timeout=10000)
             except PlaywrightTimeoutError:
                 raise RuntimeError(
@@ -128,7 +147,7 @@ def run_headless_login(
                     "state.json (xem README_NAS.md)."
                 )
 
-            username_field = _find_username_field(page)
+            username_field = _first_visible(page, _USERNAME_SELECTOR_CANDIDATES)
             if username_field is None:
                 raise RuntimeError(
                     "Tìm thấy ô mật khẩu nhưng không tìm thấy ô tài khoản trên trang DOffice. "
@@ -140,8 +159,8 @@ def run_headless_login(
             password_field.fill(password)
 
             on_log("Đang bấm đăng nhập...")
-            submit_btn = page.locator('button[type="submit"], input[type="submit"]').first
-            if submit_btn.count() > 0 and submit_btn.is_visible():
+            submit_btn = _first_visible(page, _SUBMIT_SELECTOR_CANDIDATES)
+            if submit_btn is not None:
                 submit_btn.click()
             else:
                 password_field.press("Enter")
