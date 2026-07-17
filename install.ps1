@@ -55,10 +55,15 @@ Write-Host "Cai trinh duyet Chromium cho Playwright (co the mat vai phut) ..."
 
 Write-Host ""
 Write-Host "== XONG CAI DAT ==" -ForegroundColor Green
-Write-Host "2 buoc tiep theo:" -ForegroundColor Yellow
+Write-Host "Cac buoc tiep theo:" -ForegroundColor Yellow
 Write-Host "  1) Dang nhap DOffice 1 lan (mo cua so Chromium de ban dang nhap, luu phien):" -ForegroundColor Yellow
 Write-Host "       .\.venv\Scripts\python.exe login_save_state.py"
 Write-Host "  2) Chay bang dieu khien web (roi mo http://127.0.0.1:8877):" -ForegroundColor Yellow
 Write-Host "       .\.venv\Scripts\python.exe run_web.py"
+Write-Host "  3) (Tuy chon) De web dashboard TU CHAY NGAM moi khi dang nhap Windows, khong"
+Write-Host "     can tu tay go 'run_web.py' moi lan:" -ForegroundColor Yellow
+Write-Host "       powershell -ExecutionPolicy Bypass -File .\install_web_startup.ps1"
+Write-Host "     (Sau do vao tab 'Lich chay' tren web de dat gio chay tu dong - se tu tao/"
+Write-Host "     cap nhat 1 Windows Scheduled Task rieng, chay duoc du dashboard dang tat.)"
 Write-Host ""
 Write-Host "Hoac chay bang dong lenh: .\.venv\Scripts\python.exe run_doffice.py --all" -ForegroundColor DarkGray

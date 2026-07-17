@@ -9,6 +9,7 @@ o thu muc goc de biet cach khoi dong.
 from __future__ import annotations
 
 import json
+import os
 import queue
 import sys
 import time
@@ -385,6 +386,10 @@ def settings_page():
         error=error,
         auth=_auth_state_info(effective_cfg),
         login_status=login_manager.status(),
+        # Nut "Dang nhap lai" can mo Chromium THAT tren may dang chay server
+        # nay - tren Linux/Docker (NAS/Pi) khong co man hinh (DISPLAY) se luon
+        # loi, xem do_auto/login_flow.py. Bao truoc thay vi de bam xong moi biet.
+        can_login_here=(sys.platform == "win32") or bool(os.environ.get("DISPLAY")),
     )
 
 

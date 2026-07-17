@@ -9,9 +9,11 @@
 # trinh duyet nhin thay duoc.
 #
 # Chay PowerShell voi quyen phu hop (Run as Administrator neu gap loi quyen).
+# Chay ngay tai thu muc project (khong can sua duong dan) - tu nhan dien qua
+# $PSScriptRoot, dung duoc du clone vao bat ky vi tri nao tren may nao.
 
 $TaskName = "DOffice Web Dashboard"
-$ProjectDir = "D:\OneDrive - NPT\1. binhnx Data\Business\Lap trinh\DO_Auto"
+$ProjectDir = $PSScriptRoot
 $PythonwExe = Join-Path $ProjectDir ".venv\Scripts\pythonw.exe"
 $Script = Join-Path $ProjectDir "run_web.py"
 

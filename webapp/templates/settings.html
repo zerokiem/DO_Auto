@@ -31,10 +31,19 @@
       <p class="field-hint">Trang đích mà mọi tác vụ và nút "Đăng nhập lại" bên dưới sẽ mở tới. Để trống sẽ giữ nguyên giá trị hiện tại.</p>
     </div>
 
+    {% if not can_login_here %}
+    <div class="banner banner-warning">
+      Server đang chạy trên máy <strong>không có màn hình</strong> (NAS/Docker) nên nút "Đăng nhập lại"
+      bên dưới sẽ không mở được cửa sổ Chromium. Hãy đăng nhập trên 1 máy Windows bằng
+      <code>python login_save_state.py</code> (hoặc trang này trên máy đó), rồi copy file
+      <code>playwright/.auth/state.json</code> sang máy chủ này.
+    </div>
+    {% endif %}
+
     <div class="field-row">
       <div class="panel-head-row">
         <p class="field-hint" style="margin: 0;">Dùng khi phiên hết hạn hoặc vừa đổi mật khẩu. Cửa sổ Chromium sẽ mở ngay trên máy đang chạy server này.</p>
-        <button type="button" id="login-start-btn" class="btn btn-secondary" {{ 'disabled' if login_status.is_active else '' }}>
+        <button type="button" id="login-start-btn" class="btn btn-secondary" {{ 'disabled' if (login_status.is_active or not can_login_here) else '' }}>
           Đăng nhập lại
         </button>
       </div>
