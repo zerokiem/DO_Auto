@@ -4,6 +4,13 @@ Bộ công cụ tự động tải PDF, tổng hợp Excel và xử lý văn b�
 Python + Playwright. Có 2 cách dùng: **CLI/PowerShell** (như trước) hoặc **bảng
 điều khiển web** chạy ngay trên máy bạn (mục 7).
 
+> **Đây là hướng dẫn chạy trực tiếp trên Windows** (máy cá nhân/máy cơ quan,
+> Playwright/Chromium chạy ngay trên máy đó, không cần Docker). Nếu bạn muốn
+> chạy 24/7 trên NAS Synology qua Docker (không cần mở máy tính), xem
+> [`README_NAS.md`](README_NAS.md) – cùng 1 bộ code, chỉ khác cách triển khai
+> (biến môi trường `DOFFICE_DATA_DIR`/`DOFFICE_DISPLAY_DIR`/`DOFFICE_DISPLAY_URL`
+> tự động chuyển hành vi, xem mục 10).
+
 | Trước đây (3 file rời) | Bây giờ |
 |---|---|
 | `DO_chu_tri_da_XL_v3.py` | 1 trong 3 "tác vụ" (`chu_tri`) trong `config.py` |
@@ -502,6 +509,9 @@ Việt mới trong lần chạy đầu tiên, xem mục 1.)
 | `SLOW_MO_MS` | Tốc độ thao tác trình duyệt, tăng để dễ quan sát khi test |
 | `PAUSE_BEFORE_CLOSE` | Dừng chờ Enter trước khi đóng browser (luôn `False` khi chạy qua web) |
 | `role_pattern` | Tên chức danh cần chọn trên DOffice cho từng tác vụ (mục 5.2) |
+| `DOWNLOAD_BASE_DIR` (env `DOFFICE_DATA_DIR`) | Chạy Windows: đường dẫn trong `config.py`. Chạy Docker/NAS: đọc từ biến môi trường `DOFFICE_DATA_DIR` (`docker-compose.yml`), thường là `/data` bên trong container – xem `README_NAS.md`. |
+| `DISPLAY_BASE_DIR` (env `DOFFICE_DISPLAY_DIR`, hoặc điền qua trang **Cài đặt**) | Đường dẫn **hiển thị** trong Excel/web (cột "Thư mục lưu") để bấm mở được trên Windows – chỉ cần khi `DOWNLOAD_BASE_DIR` là đường dẫn nội bộ container (vd `/data`) mà máy Windows không hiểu; ví dụ điền `S:\Working\Van_ban` nếu ổ NAS được map vào ổ S:. Chạy trực tiếp trên Windows thì để trống, không cần đổi. |
+| `DISPLAY_BASE_URL` (env `DOFFICE_DISPLAY_URL`, hoặc điền qua trang **Cài đặt**) | Nếu điền (dạng `http://...`), hyperlink cột "Tên file lưu" sẽ trỏ tới NAS qua web (vd qua Tailscale) thay vì link `file://` trên ổ đĩa – mở được cả trên điện thoại. Để trống thì dùng lại link `file://`. |
 
 Gợi ý cấu hình theo chế độ (giống bản cũ):
 

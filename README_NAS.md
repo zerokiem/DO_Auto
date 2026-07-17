@@ -1,5 +1,11 @@
 # DOffice Auto trên NAS Synology DS423 (Docker)
 
+> Đây là hướng dẫn triển khai qua **Docker trên NAS** – phù hợp khi bạn muốn
+> chạy 24/7 không cần mở máy tính. Cùng 1 bộ code với bản chạy trực tiếp trên
+> Windows, xem [`README.md`](README.md) để hiểu cấu trúc `config.py`, ý nghĩa
+> từng tác vụ (`TASKS`), và các khái niệm chung – tài liệu này chỉ tập trung
+> phần **khác biệt khi chạy trong Docker** (build/deploy/vận hành trên NAS).
+
 Trạng thái: **đã triển khai và chạy thật thành công** (kiểm tra ngày 16/07/2026 —
 chạy thử tác vụ Chủ trì, tải PDF, ghi Excel, gửi Telegram đều OK). Tài liệu này
 vừa là **nhật ký triển khai** vừa là **hướng dẫn vận hành/khôi phục** nếu cần
