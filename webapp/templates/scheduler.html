@@ -33,7 +33,7 @@
   <form method="post" class="settings-form">
     <div class="field-row">
       <label for="time1">Thời điểm 1</label>
-      <input type="time" name="time1" id="time1" value="{{ times[0] if times|length > 0 else '03:45' }}">
+      <input type="time" name="time1" id="time1" value="{{ times[0] if times|length > 0 else '' }}">
     </div>
     <div class="field-row">
       <label for="time2">Thời điểm 2 (để trống nếu không cần)</label>
