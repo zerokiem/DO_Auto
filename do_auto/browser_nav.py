@@ -94,9 +94,29 @@ def click_tab(page, tab_name: str) -> None:
             print(f"⚠️ Không click được tab {tab_name}, kiểm tra xem danh sách có sẵn không:", e2)
 
 
-def open_task_list(page, task: TaskConfig, cfg) -> bool:
+def get_tab_count(page, tab_name: str):
+    """Doc so trong ngoac canh ten tab (vd 'Phối hợp (0)') de biet danh sach dang
+    THUC SU RONG (0 van ban cho xu ly) hay khong - tranh nham voi loi that su khi
+    khong thay row nao. Tra ve None neu khong doc duoc so (vd DOffice doi giao dien),
+    de cho nhanh gia dinh la loi that nhu truoc gio."""
+    try:
+        el = page.get_by_text(re.compile(re.escape(tab_name) + r"\s*\(\d+\)", re.I)).first
+        text = el.inner_text(timeout=3000)
+        m = re.search(r"\((\d+)\)", text)
+        if m:
+            return int(m.group(1))
+    except Exception:
+        pass
+    return None
+
+
+def open_task_list(page, task: TaskConfig, cfg):
     """Vao dung man hinh danh sach cua 1 tac vu: goto trang goc -> dang nhap neu
-    can -> chon chuc danh -> click sidebar -> click link -> click tab (neu co)."""
+    can -> chon chuc danh -> click sidebar -> click link -> click tab (neu co).
+
+    Tra ve True (co danh sach, it nhat 1 van ban), False (loi that su - khong vao
+    duoc trang/danh sach), hoac None (danh sach RONG THAT SU - tab hien "(0)",
+    khong phai loi, khong con van ban nao can xu ly)."""
     where = f"{task.sidebar_item} / {task.list_link}"
     if task.tab_name:
         where += f" / {task.tab_name}"
@@ -123,6 +143,11 @@ def open_task_list(page, task: TaskConfig, cfg) -> bool:
 
     if task.tab_name:
         click_tab(page, task.tab_name)
+        text_utils.wait(page, 500)
+        count = get_tab_count(page, task.tab_name)
+        if count == 0:
+            print(f"ℹ️ Tab {task.tab_name} hiện (0) văn bản - không còn gì cần xử lý, không phải lỗi.")
+            return None
 
     try:
         page.locator("tr.mat-row").first.wait_for(state="visible", timeout=12000)

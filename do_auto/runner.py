@@ -30,7 +30,11 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
     existing_filenames = excel_log.load_existing_filenames(cfg.EXCEL_FILE, task.sheet_name)
     print(f"📘 Sheet '{task.sheet_name}' hiện có {len(existing_keys)} khóa văn bản đã tổng hợp.")
 
-    if not browser_nav.open_task_list(page, task, cfg):
+    list_status = browser_nav.open_task_list(page, task, cfg)
+    if list_status is None:
+        print(f"✅ Không còn văn bản cần xử lý cho tác vụ: {task.label}.")
+        return TaskResult(task.key, task.label, ok=True, processed=0, note="Không có văn bản cần xử lý")
+    if not list_status:
         print(f"❌ Không vào được danh sách cho tác vụ: {task.label}")
         return TaskResult(task.key, task.label, ok=False, processed=0, note="Không mở được danh sách")
 
