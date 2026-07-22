@@ -64,7 +64,7 @@ EXCEL_FILE = DOWNLOAD_BASE_DIR / "Tong_hop_DOffice.xlsx"
 
 # File SQLite luu lich su cac lan chay (dung cho trang "Lich su" tren web dashboard).
 # Tu tao khi chay lan dau, khong can tao truoc.
-HISTORY_DB = DOWNLOAD_BASE_DIR / "doffice_auto_history.sqlite3"
+HISTORY_DB = DOWNLOAD_BASE_DIR / "doffice_auto_history.jsonl"
 
 # Thu muc luu file log DAY DU cua TUNG LAN CHAY (moi lan chay run_doffice.py hoac
 # tu web deu tu tao 1 file .log o day, khong chi rieng luc chay bang Scheduled Task).
