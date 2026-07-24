@@ -132,11 +132,16 @@ def open_task_list(page, task: TaskConfig, cfg):
         return False
     text_utils.wait(page, 1000)
 
-    if not text_utils.safe_click(
-        page.get_by_role("link", name=re.compile(re.escape(task.list_link), re.I)),
-        f"Link {task.list_link}",
-        timeout=10000,
-    ):
+    # Uu tien dieu huong bang href chinh xac neu task khai bao (tranh loi "strict
+    # mode violation" khi text link bi trung, vd "Đã phát hành" co ca vbdi + vbnb).
+    if getattr(task, "list_link_href", ""):
+        link_locator = page.locator(f'a[href="{task.list_link_href}"]').first
+        link_desc = f"Link (href) {task.list_link_href}"
+    else:
+        link_locator = page.get_by_role("link", name=re.compile(re.escape(task.list_link), re.I))
+        link_desc = f"Link {task.list_link}"
+
+    if not text_utils.safe_click(link_locator, link_desc, timeout=10000):
         text_utils.save_debug(page, task.debug_prefix, "link_failed")
         return False
     text_utils.wait(page, 2000)

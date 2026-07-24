@@ -102,8 +102,112 @@ _EMPTY_DATA = {
     "phoi_hop": "",
 }
 
+# Trich cho VAN BAN DA KY DUYET PHAT HANH (VB di) - cau truc DOM khac han van ban
+# chi dao: KHONG co div.vb-item. Trong td.mat-cell:
+#   dong 1: <span style="font-weight:bold">So VB</span> ... <span class="time">Ngay phat hanh</span>
+#   dong 2: <div class="d-flex"><span>Nguoi soan thao - </span><span>Don vi soan thao</span></div>
+#   dong 3: <div>Trich yeu</div>
+_PUBLISHED_ROW_EVAL_JS = r"""
+(row) => {
+    const clean = (s) => (s || '')
+        .replace(/[\s\u00a0]+/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s+/g, '\n')
+        .trim();
 
-def extract_document_info_from_row(row) -> Dict[str, str]:
+    const cell = row.querySelector('td.mat-cell') || row;
+
+    let soVb = '';
+    const boldSpan = cell.querySelector('span[style*="font-weight: bold"], span[style*="font-weight:bold"]');
+    if (boldSpan) soVb = clean(boldSpan.innerText);
+
+    let ngayRaw = '';
+    const timeSpan = cell.querySelector('span.time, span[title="Ngày phát hành"]');
+    if (timeSpan) ngayRaw = clean(timeSpan.innerText);
+
+    let nguoi = '', donVi = '';
+    const dflex = cell.querySelector('div.d-flex');
+    if (dflex) {
+        const spans = Array.from(dflex.querySelectorAll(':scope > span'));
+        if (spans.length >= 2) {
+            nguoi = clean(spans[0].innerText).replace(/[-–\s]+$/, '').trim();
+            donVi = clean(spans[1].innerText);
+        } else {
+            const parts = clean(dflex.innerText).split(/\s+-\s+/);
+            if (parts.length >= 2) {
+                nguoi = clean(parts[0]);
+                donVi = clean(parts.slice(1).join(' - '));
+            } else {
+                nguoi = clean(dflex.innerText);
+            }
+        }
+    }
+
+    let trichYeu = '';
+    if (dflex) {
+        let sib = dflex.nextElementSibling;
+        while (sib) {
+            const st = sib.getAttribute('style') || '';
+            const txt = clean(sib.innerText);
+            const hasIcon = sib.querySelector('fa-icon, svg');
+            const isTomato = /tomato/i.test(st);
+            if (txt && !hasIcon && !isTomato) { trichYeu = txt; break; }
+            sib = sib.nextElementSibling;
+        }
+    }
+
+    return {
+        so_vb: soVb,
+        ngay_raw: ngayRaw,
+        nguoi_soan_thao: nguoi,
+        don_vi_soan_thao: donVi,
+        trich_yeu: trichYeu,
+        row_text: clean(cell.innerText),
+    };
+}
+"""
+
+
+def extract_published_doc_info_from_row(row) -> Dict[str, str]:
+    """Trich thong tin van ban DA KY DUYET PHAT HANH (VB di) tu 1 row.
+
+    Map vao dung cot Excel san co (theo lua chon nguoi dung - dung lai 13 cot):
+      - Don vi soan thao -> cot 'Noi phat hanh' (noi_phat_hanh)
+      - Nguoi soan thao  -> cot 'Nguoi chi dao' (nguoi_chi_dao)
+    Cac cot chi dao con lai de trong."""
+    data = dict(_EMPTY_DATA)
+    try:
+        raw = row.evaluate(_PUBLISHED_ROW_EVAL_JS) or {}
+    except Exception as e:
+        print(f"⚠️ Không evaluate được row (VB đã duyệt) để trích metadata: {e}")
+        raw = {}
+
+    data["so_vb"] = text_utils.clean_text(raw.get("so_vb", ""))
+    data["ngay_vb"] = text_utils.clean_date_vb(raw.get("ngay_raw", ""))
+    data["noi_phat_hanh"] = text_utils.clean_text(raw.get("don_vi_soan_thao", ""))
+    data["nguoi_chi_dao"] = text_utils.clean_text(raw.get("nguoi_soan_thao", ""))
+    data["trich_yeu"] = text_utils.clean_text(raw.get("trich_yeu", ""))
+
+    # Fallback neu DOffice doi cau truc DOM: lay tu toan bo text cua row.
+    if not data["so_vb"] or not data["ngay_vb"] or not data["trich_yeu"]:
+        row_text = text_utils.clean_text(raw.get("row_text", ""))
+        lines = [text_utils.clean_text(x) for x in row_text.splitlines() if text_utils.clean_text(x)]
+        if not data["so_vb"] and lines:
+            data["so_vb"] = lines[0]
+        if not data["ngay_vb"]:
+            m = re.search(r"\d{2}/\d{2}/\d{4}", row_text)
+            if m:
+                data["ngay_vb"] = m.group(0)
+        if not data["trich_yeu"] and lines:
+            data["trich_yeu"] = max(lines, key=len)  # dong dai nhat thuong la trich yeu
+
+    return data
+
+
+def extract_document_info_from_row(row, mode: str = "directive") -> Dict[str, str]:
+    if mode == "published":
+        return extract_published_doc_info_from_row(row)
+
     data = dict(_EMPTY_DATA)
 
     try:

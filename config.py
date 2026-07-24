@@ -180,6 +180,32 @@ TASKS = {
         sheet_order=3,
         debug_prefix="dang_doan_phoi_hop",
     ),
+    "vb_duyet": TaskConfig(
+        key="vb_duyet",
+        label="Văn bản đã duyệt - Đã phát hành",
+        enabled=True,
+        role_pattern="Phó Truyền tải điện",
+        sidebar_item="Văn bản",
+        list_link="Đã phát hành",
+        # "Đã phát hành" co ca vbdi (van ban di) lan vbnb (noi bo) -> phai dieu
+        # huong bang href chinh xac, khong dung text link (se bi trung). Day la VB
+        # di (đã ký duyệt phát hành ra ngoai).
+        list_link_href="/duthaovanban/danhsach/vbdi/phathanh",
+        tab_name=None,
+        extract_mode="published",  # cau truc DOM khac VB chi dao, xem extract.py
+        enable_finish=False,  # van ban da phat hanh roi, khong bam Ket thuc
+        ask_confirm_before_finish=False,
+        always_pick_first_row_after_finish=False,
+        prefer_flag_icon=False,
+        check_duplicate_before_open=True,  # thong tin hien du tren dong danh sach
+        max_documents=20,  # tang len neu can tai bu backlog lan dau (vd qua trang Cai dat)
+        enable_download_pdf=True,
+        download_subdir="VB_duyet",
+        sheet_name="Văn bản đã duyệt",
+        title_text="TỔNG HỢP CÁC VĂN BẢN ĐÃ KÝ DUYỆT PHÁT HÀNH",
+        sheet_order=4,
+        debug_prefix="vb_duyet",
+    ),
 }
 
 

@@ -36,6 +36,17 @@ class TaskConfig:
     sidebar_item: str = "Văn bản"  # "Văn bản" hoặc "Công việc"
     list_link: str = "Chờ xử lý"  # "Chờ xử lý" | "Đã xử lý" | "Chờ thực hiện"
     tab_name: Optional[str] = None  # "Chủ trì" | "Phối hợp" | None neu la tab mac dinh
+    # Neu dat, dieu huong vao danh sach bang dung href thay vi text link. Can khi
+    # text link bi TRUNG (vd "Đã phát hành" co ca vbdi lan vbnb) khien click theo
+    # ten bi loi "strict mode violation". De trong "" thi dung text link nhu cu.
+    list_link_href: str = ""
+
+    # --- Cach trich xuat du lieu tu dong danh sach ---
+    #   "directive" (mac dinh): van ban chi dao (Chu tri/Phoi hop/Dang doan) - co
+    #       khoi nguoi/noi dung chi dao, chu tri, phoi hop (cau truc div.vb-item).
+    #   "published": van ban da ky duyet phat hanh (VB di) - cau truc DOM khac han,
+    #       co Nguoi/Don vi soan thao thay cho khoi chi dao. Xem do_auto/extract.py.
+    extract_mode: str = "directive"
 
     # --- Hanh vi xu ly van ban ---
     # Co bam "Ket thuc nhanh" + "Luu" sau khi tai PDF khong.

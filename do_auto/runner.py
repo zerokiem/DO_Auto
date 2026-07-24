@@ -77,7 +77,7 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
         # "Cho xu ly"/"Cho thuc hien" (phoi_hop, dang_doan) - xem ghi chu trong
         # task_types.py o truong check_duplicate_before_open.
         if task.check_duplicate_before_open:
-            data = extract.extract_document_info_from_row(row)
+            data = extract.extract_document_info_from_row(row, mode=task.extract_mode)
             extract.print_document_info(data)
 
             duplicate_key = excel_log.build_duplicate_key(data, cfg.DUPLICATE_CHECK_MODE)
@@ -97,7 +97,7 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
                 print("Không mở được văn bản. Dừng để kiểm tra.")
                 break
 
-            data = extract.extract_document_info_from_row(row)
+            data = extract.extract_document_info_from_row(row, mode=task.extract_mode)
             extract.print_document_info(data)
 
             duplicate_key = excel_log.build_duplicate_key(data, cfg.DUPLICATE_CHECK_MODE)
