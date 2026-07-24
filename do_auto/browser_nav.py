@@ -252,23 +252,31 @@ def get_document_row(page, index_zero_based: int):
     raise RuntimeError(f"Không lấy được văn bản thứ {index_zero_based + 1} trong danh sách.")
 
 
-def click_document_row(row, prefer_flag_icon: bool = False) -> bool:
+def click_document_row(row, prefer_flag_icon: bool = False, extract_mode: str = "directive") -> bool:
     print("\n--- Mở văn bản đang xử lý ---")
 
     click_candidates = []
-    if prefer_flag_icon:
-        # Chi danh sach "Chu tri - Da xu ly" co icon co (fa-icon) on dinh de click.
-        click_candidates.append(
-            (row.locator("div.vb-item > div").first.locator("fa-icon, .ng-fa-icon").first, "icon cờ trong đúng row")
-        )
+    if extract_mode == "published":
+        # Danh sach "Da phat hanh" (VB di) khong co div.vb-item/.w-8 (cau truc DOM
+        # khac han van ban chi dao - xem extract.py). Toan bo td.mat-cell co click
+        # handler chung (xac nhan qua test that: click bat ky span/div con nao ben
+        # trong cell deu mo duoc van ban), nen click thang vao do, khong thu 2 cai
+        # selector chac chan khong ton tai (do se timeout 3s x 2 = ton 6s vo ich).
+        click_candidates.append((row.locator("td.mat-cell").first, "td.mat-cell trong đúng row (VB đã duyệt)"))
+    else:
+        if prefer_flag_icon:
+            # Chi danh sach "Chu tri - Da xu ly" co icon co (fa-icon) on dinh de click.
+            click_candidates.append(
+                (row.locator("div.vb-item > div").first.locator("fa-icon, .ng-fa-icon").first, "icon cờ trong đúng row")
+            )
 
-    click_candidates.extend(
-        [
-            (row.locator(".w-8").first, ".w-8 trong đúng row"),
-            (row.locator("div.vb-item").first, "div.vb-item trong đúng row"),
-            (row.locator("td.mat-cell").first, "td.mat-cell trong đúng row"),
-        ]
-    )
+        click_candidates.extend(
+            [
+                (row.locator(".w-8").first, ".w-8 trong đúng row"),
+                (row.locator("div.vb-item").first, "div.vb-item trong đúng row"),
+                (row.locator("td.mat-cell").first, "td.mat-cell trong đúng row"),
+            ]
+        )
 
     for locator, desc in click_candidates:
         try:

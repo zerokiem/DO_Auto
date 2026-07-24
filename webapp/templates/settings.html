@@ -120,15 +120,18 @@
         <span>Tải PDF về máy</span>
       </label>
     </div>
-    <div class="field-row">
+    <div class="field-row{{ '' if task.supports_finish else ' field-row-disabled' }}">
       <label class="switch">
-        <input type="checkbox" name="{{ key }}_enable_finish" {{ 'checked' if task.enable_finish else '' }}>
+        <input type="checkbox" name="{{ key }}_enable_finish" {{ 'checked' if task.enable_finish else '' }} {{ 'disabled' if not task.supports_finish else '' }}>
         <span>Bấm "Kết thúc nhanh" + "Lưu" sau khi tải xong</span>
       </label>
+      {% if not task.supports_finish %}
+      <p class="field-hint">Không áp dụng cho tác vụ này (văn bản đã xong/đã phát hành, không có bước Kết thúc).</p>
+      {% endif %}
     </div>
-    <div class="field-row">
+    <div class="field-row{{ '' if task.supports_finish else ' field-row-disabled' }}">
       <label class="switch">
-        <input type="checkbox" name="{{ key }}_ask_confirm_before_finish" {{ 'checked' if task.ask_confirm_before_finish else '' }}>
+        <input type="checkbox" name="{{ key }}_ask_confirm_before_finish" {{ 'checked' if task.ask_confirm_before_finish else '' }} {{ 'disabled' if not task.supports_finish else '' }}>
         <span>Hỏi xác nhận trước khi Kết thúc/Lưu (chỉ có tác dụng khi chạy bằng CLI, web luôn tắt mục này)</span>
       </label>
     </div>

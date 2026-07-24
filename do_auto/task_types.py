@@ -49,6 +49,13 @@ class TaskConfig:
     extract_mode: str = "directive"
 
     # --- Hanh vi xu ly van ban ---
+    # Tac vu nay co bao gio can bam "Ket thuc nhanh" khong (vd chu_tri/vb_duyet:
+    # van ban DA xu ly/DA phat hanh roi, khong bao gio bam Ket thuc). Dat False de
+    # trang web Cai dat AN/LAM MO 2 o "Bam Ket thuc..." va "Hoi xac nhan..." cho
+    # tac vu nay - tranh nguoi dung bat nham 1 hanh vi khong co tac dung/khong
+    # dung. Khong lien quan enable_finish (gia tri THUC TE dang bat/tat).
+    supports_finish: bool = True
+
     # Co bam "Ket thuc nhanh" + "Luu" sau khi tai PDF khong.
     # Danh sach "Da xu ly" (chu_tri) khong can vi van ban da xong roi.
     enable_finish: bool = True

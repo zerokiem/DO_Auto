@@ -89,11 +89,11 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
                 current_index += 1
                 continue
 
-            if not browser_nav.click_document_row(row, task.prefer_flag_icon):
+            if not browser_nav.click_document_row(row, task.prefer_flag_icon, extract_mode=task.extract_mode):
                 print("Không mở được văn bản. Dừng để kiểm tra.")
                 break
         else:
-            if not browser_nav.click_document_row(row, task.prefer_flag_icon):
+            if not browser_nav.click_document_row(row, task.prefer_flag_icon, extract_mode=task.extract_mode):
                 print("Không mở được văn bản. Dừng để kiểm tra.")
                 break
 
