@@ -10,9 +10,127 @@ tac vu (va de nguoi khac them tac vu moi neu can).
 from __future__ import annotations
 
 import re
+from urllib.parse import urljoin, urlparse
 
 from . import text_utils
 from .task_types import TaskConfig
+
+
+_STEP_TYPES = {"sidebar", "link_text", "link_href", "tab", "selector"}
+_SELECTOR_ACTIONS = {"click", "wait"}
+
+
+def _step_int(step: dict, name: str, default: int, minimum: int, maximum: int) -> int:
+    """Doc mot so nguyen tu cau hinh web, giu trong khoang an toan."""
+    try:
+        value = int(step.get(name, default))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+def _run_navigation_step(page, step: dict, task: TaskConfig, index: int) -> bool:
+    """Chay mot buoc dieu huong khai bao trong TaskConfig.navigation_steps.
+
+    Cac buoc "sidebar", "link_text", "link_href" va "tab" giu lai locator
+    da duoc kiem chung cua du an. "selector" mo hoan toan cho Playwright
+    locator (CSS, text=..., xpath=..., ...), de tung tai khoan co the chen them
+    cac buoc trung gian ma khong sua code.
+    """
+    if not isinstance(step, dict):
+        print(f"❌ Bước {index}: dữ liệu không hợp lệ (phải là object JSON).")
+        return False
+
+    step_type = str(step.get("type", "selector")).strip().lower()
+    name = str(step.get("name") or f"Bước {index}").strip()
+    optional = bool(step.get("optional", False))
+    timeout = _step_int(step, "timeout_ms", 10000, 500, 60000)
+    delay = _step_int(step, "delay_ms", 800, 0, 30000)
+
+    if step_type not in _STEP_TYPES:
+        message = f"Bước '{name}' có type không hỗ trợ: {step_type!r}."
+        if optional:
+            print(f"⚠️ {message} Bỏ qua vì optional=true.")
+            return True
+        print(f"❌ {message}")
+        return False
+
+    try:
+        if step_type == "sidebar":
+            value = str(step.get("value", "")).strip()
+            if not value:
+                raise ValueError("thiếu value")
+            if not click_sidebar_item(page, value, task.debug_prefix):
+                raise RuntimeError(f"không click được sidebar {value!r}")
+
+        elif step_type == "link_text":
+            value = str(step.get("value", "")).strip()
+            if not value:
+                raise ValueError("thiếu value")
+            locator = page.get_by_role("link", name=re.compile(re.escape(value), re.I))
+            if not text_utils.safe_click(locator, f"Link {value}", timeout=timeout):
+                raise RuntimeError(f"không click được link {value!r}")
+
+        elif step_type == "link_href":
+            href = str(step.get("href") or step.get("value") or "").strip()
+            if not href:
+                raise ValueError("thiếu href")
+            locator = page.locator(f'a[href="{href}"]').first
+            if not text_utils.safe_click(locator, f"Link (href) {href}", timeout=timeout):
+                raise RuntimeError(f"không click được href {href!r}")
+
+        elif step_type == "tab":
+            value = str(step.get("value", "")).strip()
+            if not value:
+                raise ValueError("thiếu value")
+            if not click_tab(page, value):
+                raise RuntimeError(f"không click được tab bắt buộc {value!r}")
+            if step.get("empty_if_zero") and get_tab_count(page, value) == 0:
+                print(f"ℹ️ Bước điều hướng {index}: tab {value} đang có 0 văn bản.")
+                return "empty"
+
+        else:  # selector
+            selector = str(step.get("selector") or step.get("value") or "").strip()
+            if not selector:
+                raise ValueError("thiếu selector")
+            action = str(step.get("action", "click")).strip().lower()
+            if action not in _SELECTOR_ACTIONS:
+                raise ValueError("action chỉ nhận 'click' hoặc 'wait'")
+            nth = _step_int(step, "nth", 0, 0, 1000)
+            locator = page.locator(selector).nth(nth)
+            wait_for = str(step.get("wait_for", "visible")).strip().lower()
+            if wait_for not in {"attached", "detached", "visible", "hidden"}:
+                raise ValueError("wait_for chỉ nhận attached, detached, visible hoặc hidden")
+            if action == "wait":
+                locator.wait_for(state=wait_for, timeout=timeout)
+            else:
+                locator.click(timeout=timeout)
+
+        print(f"✅ Bước điều hướng {index}: {name}.")
+        if delay:
+            text_utils.wait(page, delay)
+        return True
+    except Exception as e:
+        if optional:
+            print(f"⚠️ Bước điều hướng {index} '{name}' không chạy được, bỏ qua vì optional=true: {e}")
+            return True
+        print(f"❌ Bước điều hướng {index} '{name}' thất bại: {e}")
+        return False
+
+
+def run_navigation_steps(page, task: TaskConfig) -> bool:
+    """Chay cac buoc dieu huong tuy chinh theo dung thu tu trong cau hinh."""
+    steps = getattr(task, "navigation_steps", None) or []
+    if not isinstance(steps, list):
+        print("❌ navigation_steps phải là một mảng JSON.")
+        return False
+    for index, step in enumerate(steps, start=1):
+        status = _run_navigation_step(page, step, task, index)
+        if status == "empty":
+            return "empty"
+        if not status:
+            return False
+    return True
 
 
 def click_login_if_needed(page) -> None:
@@ -81,17 +199,20 @@ def click_sidebar_item(page, sidebar_item: str, debug_prefix: str) -> bool:
     return False
 
 
-def click_tab(page, tab_name: str) -> None:
+def click_tab(page, tab_name: str) -> bool:
     try:
         page.get_by_role("tab", name=re.compile(re.escape(tab_name), re.I)).click(timeout=10000)
         print(f"✅ Click tab {tab_name}.")
+        return True
     except Exception as e:
         print(f"⚠️ Không click được tab {tab_name} bằng role, thử bằng text:", e)
         try:
             page.get_by_text(re.compile(re.escape(tab_name) + r"\s*\(\d+\)", re.I)).click(timeout=10000)
             print(f"✅ Click tab {tab_name} bằng text.")
+            return True
         except Exception as e2:
-            print(f"⚠️ Không click được tab {tab_name}, kiểm tra xem danh sách có sẵn không:", e2)
+            print(f"❌ Không click được tab bắt buộc {tab_name}:", e2)
+            return False
 
 
 def get_tab_count(page, tab_name: str):
@@ -117,7 +238,8 @@ def open_task_list(page, task: TaskConfig, cfg):
     Tra ve True (co danh sach, it nhat 1 van ban), False (loi that su - khong vao
     duoc trang/danh sach), hoac None (danh sach RONG THAT SU - tab hien "(0)",
     khong phai loi, khong con van ban nao can xu ly)."""
-    where = f"{task.sidebar_item} / {task.list_link}"
+    direct_path = str(getattr(task, "list_link_href", "") or "").strip()
+    where = direct_path or f"{task.sidebar_item} / {task.list_link}"
     if task.tab_name:
         where += f" / {task.tab_name}"
     print(f"\n--- Vào {where} ---")
@@ -128,26 +250,64 @@ def open_task_list(page, task: TaskConfig, cfg):
     click_login_if_needed(page)
     choose_role_if_needed(page, task.role_pattern, cfg.ROLE_BUTTON_NAME_HINT)
 
-    if not click_sidebar_item(page, task.sidebar_item, task.debug_prefix):
-        return False
-    text_utils.wait(page, 1000)
+    # Che do don gian dung 3 truong sidebar/list/tab. JSON chi thay the luong
+    # nay khi nguoi dung chu dong bat "Dieu huong nang cao". None giu tuong
+    # thich voi task da tao tu ban truoc (co JSON thi xem la nang cao).
+    advanced_navigation = getattr(task, "use_advanced_navigation", None)
+    if advanced_navigation is None:
+        advanced_navigation = bool(getattr(task, "navigation_steps", None))
+    if advanced_navigation:
+        if not getattr(task, "navigation_steps", None):
+            print("❌ Đã bật điều hướng nâng cao nhưng chưa có bước JSON nào.")
+            return False
+        navigation_status = run_navigation_steps(page, task)
+        if navigation_status == "empty":
+            return None
+        if not navigation_status:
+            text_utils.save_debug(page, task.debug_prefix, "navigation_step_failed")
+            return False
+        try:
+            row_selector = getattr(task, "document_row_selector", "tr.mat-row") or "tr.mat-row"
+            page.locator(row_selector).first.wait_for(state="visible", timeout=12000)
+            print("Da thay danh sach van ban qua navigation_steps.")
+            text_utils.wait(page, 1000)
+            return True
+        except Exception as e:
+            print("Khong thay danh sach van ban sau navigation_steps:", e)
+            text_utils.save_debug(page, task.debug_prefix, "list_not_found")
+            return False
 
-    # Uu tien dieu huong bang href chinh xac neu task khai bao (tranh loi "strict
-    # mode violation" khi text link bi trung, vd "Đã phát hành" co ca vbdi + vbnb).
-    if getattr(task, "list_link_href", ""):
-        link_locator = page.locator(f'a[href="{task.list_link_href}"]').first
-        link_desc = f"Link (href) {task.list_link_href}"
+    # URL truc tiep la cach on dinh nhat: sau khi chon Vai tro, vao thang route
+    # danh sach va bo qua Sidebar/Tieu muc. Chi cho phep cung origin DOffice de
+    # tranh cau hinh nham thanh mot website ben ngoai.
+    if direct_path:
+        direct_url = urljoin(cfg.DOFFICE_URL, direct_path)
+        if urlparse(direct_url).netloc != urlparse(cfg.DOFFICE_URL).netloc:
+            print(f"❌ Đường dẫn trực tiếp phải thuộc DOffice: {direct_path}")
+            return False
+        try:
+            page.goto(direct_url, wait_until="domcontentloaded")
+            text_utils.wait(page, 2000)
+            print(f"✅ Đã mở đường dẫn trực tiếp: {direct_path}")
+        except Exception as e:
+            print(f"❌ Không mở được đường dẫn trực tiếp {direct_path}:", e)
+            text_utils.save_debug(page, task.debug_prefix, "direct_link_failed")
+            return False
     else:
+        if not click_sidebar_item(page, task.sidebar_item, task.debug_prefix):
+            return False
+        text_utils.wait(page, 1000)
         link_locator = page.get_by_role("link", name=re.compile(re.escape(task.list_link), re.I))
         link_desc = f"Link {task.list_link}"
-
-    if not text_utils.safe_click(link_locator, link_desc, timeout=10000):
-        text_utils.save_debug(page, task.debug_prefix, "link_failed")
-        return False
-    text_utils.wait(page, 2000)
+        if not text_utils.safe_click(link_locator, link_desc, timeout=10000):
+            text_utils.save_debug(page, task.debug_prefix, "link_failed")
+            return False
+        text_utils.wait(page, 2000)
 
     if task.tab_name:
-        click_tab(page, task.tab_name)
+        if not click_tab(page, task.tab_name):
+            text_utils.save_debug(page, task.debug_prefix, "tab_failed")
+            return False
         text_utils.wait(page, 500)
         count = get_tab_count(page, task.tab_name)
         if count == 0:
@@ -155,7 +315,8 @@ def open_task_list(page, task: TaskConfig, cfg):
             return None
 
     try:
-        page.locator("tr.mat-row").first.wait_for(state="visible", timeout=12000)
+        row_selector = getattr(task, "document_row_selector", "tr.mat-row") or "tr.mat-row"
+        page.locator(row_selector).first.wait_for(state="visible", timeout=12000)
         print("✅ Đã thấy danh sách văn bản.")
         text_utils.wait(page, 1000)
         return True
@@ -218,12 +379,12 @@ def scroll_document_list_down(page, pixels: int = 900) -> bool:
     return moved
 
 
-def get_document_row(page, index_zero_based: int):
+def get_document_row(page, index_zero_based: int, row_selector: str = "tr.mat-row"):
     """
     Lay row theo thu tu trong danh sach: 0 la van ban thu 1, 1 la van ban thu 2...
     Neu DOM chua load du row thi cuon dung container danh sach de Angular load them row.
     """
-    rows = page.locator("tr.mat-row")
+    rows = page.locator(row_selector or "tr.mat-row")
 
     for attempt in range(1, 13):
         count = rows.count()
@@ -252,10 +413,35 @@ def get_document_row(page, index_zero_based: int):
     raise RuntimeError(f"Không lấy được văn bản thứ {index_zero_based + 1} trong danh sách.")
 
 
-def click_document_row(row, prefer_flag_icon: bool = False, extract_mode: str = "directive") -> bool:
+def document_detail_is_open(page) -> bool:
+    """Kiem tra click da mo chi tiet/PDF, khong chi focus dong danh sach."""
+    # Dung cho test fake va khong anh huong Playwright that.
+    if getattr(page, "document_detail_visible", False):
+        return True
+
+    candidates = [
+        page.get_by_text(re.compile(r"File\s+văn bản", re.I)).first,
+        page.get_by_role("button", name=re.compile(r"Tải xuống|Download", re.I)).first,
+        page.locator("#download, button[title*='Tải xuống'], button[aria-label*='Download']").first,
+        page.locator("iframe, embed, object, pdf-viewer, ngx-extended-pdf-viewer").first,
+    ]
+    for locator in candidates:
+        try:
+            locator.wait_for(state="visible", timeout=1200)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def click_document_row(
+    row, prefer_flag_icon: bool = False, extract_mode: str = "directive", document_click_selector: str = ""
+) -> bool:
     print("\n--- Mở văn bản đang xử lý ---")
 
     click_candidates = []
+    if document_click_selector:
+        click_candidates.append((row.locator(document_click_selector).first, f"selector tuy chinh {document_click_selector}"))
     if extract_mode == "published":
         # Danh sach "Da phat hanh" (VB di) khong co div.vb-item/.w-8 (cau truc DOM
         # khac han van ban chi dao - xem extract.py). Toan bo td.mat-cell co click
@@ -264,27 +450,52 @@ def click_document_row(row, prefer_flag_icon: bool = False, extract_mode: str = 
         # selector chac chan khong ton tai (do se timeout 3s x 2 = ton 6s vo ich).
         click_candidates.append((row.locator("td.mat-cell").first, "td.mat-cell trong đúng row (VB đã duyệt)"))
     else:
-        if prefer_flag_icon:
+        try:
+            has_vb_item = row.locator("div.vb-item").count() > 0
+        except Exception:
+            has_vb_item = False
+
+        # Kieu thu ba: Cong viec ca nhan/ban phong (vd "Xem de biet") khong
+        # co div.vb-item. Click handler nam tren chinh <tr mat-row>, click td co
+        # the chi focus dong ma khong mo PDF. Click vao So VB o goc tren cua row
+        # da duoc xac nhan mo dung detail/PDF cho ca KY_HIEU_CV va KY_HIEU_LDP.
+        if not has_vb_item:
+            click_candidates.extend(
+                [
+                    (
+                        row.locator(
+                            "td.mat-cell > div:first-child > span:first-child, "
+                            "td > div:first-child > span:first-child"
+                        ).first,
+                        "Số văn bản trong tr.mat-row (Công việc)",
+                    ),
+                ]
+            )
+        elif prefer_flag_icon:
             # Chi danh sach "Chu tri - Da xu ly" co icon co (fa-icon) on dinh de click.
             click_candidates.append(
                 (row.locator("div.vb-item > div").first.locator("fa-icon, .ng-fa-icon").first, "icon cờ trong đúng row")
             )
 
-        click_candidates.extend(
-            [
-                (row.locator(".w-8").first, ".w-8 trong đúng row"),
-                (row.locator("div.vb-item").first, "div.vb-item trong đúng row"),
-                (row.locator("td.mat-cell").first, "td.mat-cell trong đúng row"),
-            ]
-        )
+        if has_vb_item:
+            click_candidates.extend(
+                [
+                    (row.locator(".w-8").first, ".w-8 trong đúng row"),
+                    (row.locator("div.vb-item").first, "div.vb-item trong đúng row"),
+                ]
+            )
 
     for locator, desc in click_candidates:
         try:
             locator.scroll_into_view_if_needed(timeout=3000)
             locator.click(timeout=8000)
-            print(f"✅ Đã click văn bản bằng {desc}.")
-            text_utils.wait(row.page, 2500)
-            return True
+            # PDF viewer cua danh sach Xem de biet co the can gan 5 giay moi
+            # render iframe; cho du truoc khi ket luan click chi focus dong.
+            text_utils.wait(row.page, 4000)
+            if document_detail_is_open(row.page):
+                print(f"✅ Đã click văn bản bằng {desc}; chi tiết/PDF đã mở.")
+                return True
+            print(f"⚠️ Đã click {desc} nhưng chưa thấy chi tiết/PDF; thử selector kế tiếp.")
         except Exception as e:
             print(f"⚠️ Không click được {desc}: {e}")
 

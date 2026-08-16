@@ -25,6 +25,10 @@ services:
       # (Tuy chon) duong dan hien thi trong Excel + link mo file - xem .env.example.
       - DOFFICE_DISPLAY_DIR=${DOFFICE_DISPLAY_DIR:-}
       - DOFFICE_DISPLAY_URL=${DOFFICE_DISPLAY_URL:-}
+      - DOFFICE_TELEGRAM_ENABLED=${DOFFICE_TELEGRAM_ENABLED:-false}
+      - DOFFICE_TELEGRAM_BOT_TOKEN=${DOFFICE_TELEGRAM_BOT_TOKEN:-}
+      - DOFFICE_TELEGRAM_CHAT_ID=${DOFFICE_TELEGRAM_CHAT_ID:-}
+      - DOFFICE_TELEGRAM_ONLY_IF_NEW=${DOFFICE_TELEGRAM_ONLY_IF_NEW:-true}
       - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:
       # Code = chinh thu muc repo nay (chua config.py, do_auto/, webapp/, va

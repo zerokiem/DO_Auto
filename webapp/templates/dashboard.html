@@ -18,7 +18,7 @@
 <section class="panel">
   <div class="panel-head">
     <h1>Chọn tác vụ cần chạy</h1>
-    <p>Chọn 1, vài, hoặc cả 3 tác vụ. Chỉ mở 1 phiên trình duyệt cho dù chọn bao nhiêu tác vụ.</p>
+    <p>Chọn một hoặc nhiều tác vụ. Chỉ mở 1 phiên trình duyệt cho dù chọn bao nhiêu tác vụ.</p>
   </div>
 
   <div class="task-grid">
@@ -29,7 +29,17 @@
         <input type="checkbox" class="task-checkbox" value="{{ key }}" {{ 'checked' if task.enabled else '' }}>
         <span class="task-title">{{ task.label }}</span>
       </div>
-      <div class="task-path">{{ task.sidebar_item }} &rsaquo; {{ task.list_link }}{% if task.tab_name %} &rsaquo; {{ task.tab_name }}{% endif %}</div>
+      <div class="task-path">
+        {% if task.use_advanced_navigation or (task.use_advanced_navigation is none and task.navigation_steps) %}
+          {% for step in task.navigation_steps %}
+            {{ step.get('name') or step.get('value') or step.get('selector') or '?' }}{{ ' &rsaquo; ' if not loop.last else '' }}
+          {% endfor %}
+        {% elif task.list_link_href %}
+          {{ task.list_link_href }}{% if task.tab_name %} &rsaquo; {{ task.tab_name }}{% endif %}
+        {% else %}
+          {{ task.sidebar_item }} &rsaquo; {{ task.list_link }}{% if task.tab_name %} &rsaquo; {{ task.tab_name }}{% endif %}
+        {% endif %}
+      </div>
       <div class="task-meta">
         <span class="pill">Vai trò: {{ task.role_pattern or "(không đổi)" }}</span>
         <span class="pill">Tối đa {{ task.max_documents }} văn bản</span>

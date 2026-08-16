@@ -280,6 +280,18 @@
       telegramTestBtn.addEventListener("click", testTelegram);
     }
 
+    document.querySelectorAll(".extract-mode-select").forEach((select) => {
+      const syncTabRequirement = () => {
+        const tabInput = document.getElementById(select.dataset.tabTarget);
+        if (!tabInput) return;
+        const required = select.value === "directive";
+        tabInput.required = required;
+        tabInput.setAttribute("aria-required", required ? "true" : "false");
+      };
+      select.addEventListener("change", syncTabRequirement);
+      syncTabRequirement();
+    });
+
     // Neu mo lai trang trong luc dang co 1 lan chay dien ra (vd nguoi dung
     // reload), tu ket noi lai console va tiep tuc theo doi thay vi mat log.
     const initial = window.__INITIAL_STATUS__;

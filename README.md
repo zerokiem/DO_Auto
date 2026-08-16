@@ -13,10 +13,10 @@ Python + Playwright. Có 2 cách dùng: **CLI/PowerShell** (như trước) hoặ
 
 | Trước đây (3 file rời) | Bây giờ |
 |---|---|
-| `DO_chu_tri_da_XL_v3.py` | 1 trong 3 "tác vụ" (`chu_tri`) trong `config.py` |
+| `DO_chu_tri_da_XL_v3.py` | tác vụ `chu_tri` trong `config.py` |
 | `DO_phoi_hop.py` | tác vụ `phoi_hop` |
 | `DO_Dang_Doan_phoi_hop_v3.py` | tác vụ `dang_doan` |
-| 3 file Excel riêng | **1 file Excel `Tong_hop_DOffice.xlsx`, 3 sheet tiếng Việt có dấu** |
+| Các file Excel riêng | **1 file Excel `Tong_hop_DOffice.xlsx`, mỗi tác vụ có một sheet riêng** |
 | Vai trò "Phó Truyền tải điện" hard-code trong code | Gõ vai trò trong `config.py` hoặc trang web **Cài đặt** (ghi thẳng vào `config.py`) |
 | Chạy `python DO_xxx.py` từng file | `python run_doffice.py` (menu/`--tasks`/`--all`) **hoặc** `python run_web.py` (bảng điều khiển web) |
 | Chỉ có log khi chạy Scheduled Task | **Mọi lần chạy** (tay, Scheduled Task, web) đều tự tạo 1 file log riêng |
@@ -37,44 +37,46 @@ Excel cũ và PDF cũ vẫn dùng bình thường; có script hỗ trợ gộp E
 
 ## Cài đặt nhanh
 
-Repo này đang **private**, không public trên GitHub - bộ code được gửi trực
-tiếp dưới dạng **1 file `.zip`** (qua email/Zalo...) thay vì `git clone`. Có 2
-kiểu máy, chọn đúng kiểu của bạn:
+Mã nguồn và bộ phát hành nằm tại GitHub. Chọn đúng một lệnh cho máy của bạn:
 
 ### A. Máy Windows (đa số trường hợp - không cần cài Docker)
 
-1. Giải nén file `.zip` đã nhận được vào 1 thư mục bất kỳ (ví dụ `D:\DO_Auto`).
-2. Mở PowerShell tại thư mục đó (Shift + chuột phải trong File Explorer &rarr;
-   "Open PowerShell window here"), rồi chạy:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\install.ps1
-   ```
+Mở PowerShell và chạy đúng một dòng:
+
+```powershell
+irm https://raw.githubusercontent.com/zerokiem/DO_Auto/v1.1.0/install.ps1 | iex
+```
 
 `install.ps1` tự tạo môi trường ảo, cài thư viện + trình duyệt Chromium (mất
-vài phút, cần internet). Xong nó in ra các bước tiếp theo (đăng nhập DOffice 1
-lần rồi `python run_web.py`). Yêu cầu duy nhất: máy đã cài sẵn **Python 3.10+**
+vài phút, cần internet) vào `%USERPROFILE%\DO_Auto`. Có thể chọn thư mục khác
+bằng biến `DOFFICE_INSTALL_DIR`. Xong nó in ra các bước tiếp theo (đăng nhập
+DOffice một lần rồi chạy web). Yêu cầu duy nhất: máy đã cài sẵn **Python 3.10+**
 ([tải tại đây](https://www.python.org/downloads/), nhớ tick **Add python.exe
 to PATH** lúc cài) - không cần cài Git, không cần Docker.
 
-*(Nếu bạn có quyền truy cập repo GitHub riêng - ví dụ dùng chung với người viết
-tool - có thể `git clone` thay vì giải nén zip, hai cách cho kết quả giống hệt
-nhau.)*
+Nếu đã tải Source ZIP từ trang Release, vẫn có thể giải nén rồi chạy
+`powershell -ExecutionPolicy Bypass -File .\install.ps1` như trước.
 
 ### B. Máy CÓ Docker (NAS Synology, Raspberry Pi, WSL2, Docker Desktop, Linux)
 
 Dùng khi muốn chạy 24/7 không cần mở máy tính (xem thêm
 [`README_NAS.md`](README_NAS.md) cho chi tiết Synology).
 
-1. Giải nén file `.zip` vào 1 thư mục trên máy/NAS đó.
-2. Trong thư mục đó:
-   ```bash
-   cp .env.example .env      # mở .env sửa nếu cần (xem chú thích sẵn trong file)
-   docker compose up -d      # NAS Synology dùng: sudo docker-compose up -d
-   ```
+Linux headless có Docker + Compose:
 
-Xong, mở `http://<địa-chỉ-máy>:8877`. Dữ liệu (PDF/Excel) mặc định lưu ở thư mục
-`./data` ngay cạnh code; muốn lưu chỗ khác thì sửa `DOFFICE_DATA_HOST` trong
-`.env`. Cập nhật code sau này: chép đè bản `.zip` mới rồi `docker compose restart`.
+```bash
+curl -fsSL https://raw.githubusercontent.com/zerokiem/DO_Auto/v1.1.0/install.sh | bash
+```
+
+Synology DS423 (đổi `<user>` thành tài khoản DSM/SSH của bạn):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zerokiem/DO_Auto/v1.1.0/install.sh | sudo env DOFFICE_INSTALL_DIR=/volume1/homes/<user>/Working/Programming/DO_Auto DOFFICE_DATA_HOST=/volume1/homes/<user>/Working/Van_ban bash
+```
+
+Script tự tải đúng release, tạo `.env`, build và bật container. Xong, mở
+`http://<địa-chỉ-máy>:8877`. Dữ liệu (PDF/Excel) mặc định lưu ở `./data`; đường
+dẫn truyền bằng `DOFFICE_DATA_HOST` được ghi lại vào `.env`.
 
 ### Bước bắt buộc 1 lần: đăng nhập DOffice (`state.json`)
 
@@ -100,6 +102,7 @@ Dù cài kiểu nào, DOffice cần 1 phiên đăng nhập đã lưu (`playwrigh
 DO_Auto/
 │
 ├─ install.ps1                        # Cài đặt 1 lệnh trên Windows (tạo venv, cài thư viện + Chromium)
+├─ install.sh                         # Cài đặt 1 lệnh bằng Docker trên Linux/NAS
 ├─ config.py                          # NGUỒN CẤU HÌNH DUY NHẤT - sửa tay hoặc qua web Cài đặt đều ghi vào đây
 ├─ run_doffice.py                     # Chạy chương trình bằng CLI/PowerShell
 ├─ run_web.py                         # Chạy bảng điều khiển web (mục 7)
@@ -145,15 +148,18 @@ dùng chung, chỉ cần sửa nếu DOffice đổi giao diện (xem mục 13).
 
 ---
 
-## 1. 3 tác vụ hiện có
+## 1. 5 tác vụ mặc định (có thể thêm/bỏ qua Cài đặt)
 
 | Khoá (`--tasks`) | Tên hiển thị | Menu DOffice | Có bấm Kết thúc? |
 |---|---|---|---|
 | `chu_tri` | Văn bản Chủ trì – Đã xử lý | Văn bản → Đã xử lý → tab Chủ trì | Không (văn bản đã xong) |
 | `phoi_hop` | Văn bản Phối hợp – Chờ xử lý | Văn bản → Chờ xử lý → tab Phối hợp | Có |
 | `dang_doan` | Công việc Đảng/Đoàn/Công đoàn – Chờ thực hiện | Công việc → Chờ thực hiện → tab Phối hợp | Có |
+| `vb_duyet` | Văn bản đã duyệt – Đã phát hành | Văn bản → Đã phát hành | Không (văn bản đã phát hành) |
+| `vb_de_biet` | Văn bản – Xem để biết | Văn bản → Xem để biết → tab Chưa xử lý | Có |
 
-Sheet Excel tương ứng: **Chủ trì**, **Phối hợp**, **Đảng - Đoàn** (nếu bạn đã
+Sheet Excel tương ứng: **Chủ trì**, **Phối hợp**, **Đảng - Đoàn**, **Văn bản đã duyệt**
+và **de_biet** (nếu bạn đã
 có sheet với tên cũ `Chu_tri`/`Phoi_hop`/`Dang_doan` từ bản trước, lần chạy đầu
 tiên với bản này sẽ **tự đổi tên sheet cũ** sang tên mới, giữ nguyên toàn bộ dữ
 liệu, không tạo sheet trống mới).
@@ -295,6 +301,68 @@ cho **mọi** tác vụ trong lần chạy đó (không sửa `config.py`, khôn
 lần chạy thật sau này). Trang web cũng có nút "Chế độ test an toàn" tương tự
 (mục 7.2), nhưng vì web không có ai ngồi gõ `y/n`, phần hỏi xác nhận từng bước
 sẽ luôn tắt dù bật test hay không.
+
+---
+
+## 5.4 Điều hướng DOffice và quản lý tác vụ
+
+Trang **Cài đặt** mặc định dùng luồng ổn định sau:
+
+1. Chọn **Vai trò**.
+2. Mở **Đường dẫn trực tiếp đến danh sách**; trang web có danh sách gợi ý các
+   route đã khảo sát trên DOffice nhưng vẫn cho nhập route mới.
+3. Chọn **Tab bắt buộc** đối với dạng văn bản/công việc xử lý. Tab có thể là
+   `Chủ trì`, `Phối hợp`, `Chưa xử lý`, `Đã xử lý`... tùy màn hình thực tế.
+
+Đường dẫn tương ứng với `list_link_href` trong `config.py`. Sau khi chọn Vai
+trò, Playwright `goto` thẳng route này và bỏ qua hai click Sidebar/Tiểu mục, do
+đó không bị lỗi khi DOffice có hai menu trùng tên như `Xem để biết`. Cách cũ
+`sidebar_item` + `list_link` vẫn nằm trong phần thu gọn để dự phòng khi chưa
+biết URL. Dạng `published` có thể không có Tab.
+
+Mục **Dạng dòng văn bản** có hai lựa chọn đã được chương trình hỗ trợ:
+
+- `directive`: văn bản/công việc xử lý; tự nhận dạng để click nội dung, biểu tượng cờ hoặc Số VB ở đầu dòng Công việc.
+- `published`: văn bản đã phát hành, click ô trong dòng bảng.
+
+Với danh sách **Công việc → Xem để biết**, hệ thống đọc riêng từng trường từ
+đúng phần tử trong hàng: Số VB, Ngày VB, Nơi phát hành và Trích yếu. Không dùng
+toàn bộ nội dung ô nên không gộp bốn trường vào một cột Excel.
+
+Nếu tài khoản có bước đặc biệt (bộ lọc, nút riêng...), có thể khai báo thủ công
+`navigation_steps` trong `config.py`. Chuỗi JSON nâng cao không hiển thị trên
+trang Cài đặt để tránh làm rối giao diện. Ví dụ:
+
+```python
+navigation_steps=[
+    {"name": "Mở Công việc", "type": "sidebar", "value": "Công việc"},
+    {"name": "Mở Đã giao việc", "type": "link_text", "value": "Đã giao việc"},
+    {
+        "name": "Chọn bộ lọc của tôi",
+        "type": "selector",
+        "selector": "button[data-testid='my-filter']",
+        "action": "click",
+        "timeout_ms": 10000,
+        "delay_ms": 800,
+    },
+    {"name": "Chờ danh sách", "type": "selector", "selector": "tr.mat-row", "action": "wait"},
+]
+```
+
+`type` hỗ trợ `sidebar`, `link_text`, `link_href`, `tab` và `selector`.
+`selector` nhận selector Playwright (CSS, `text=...`, `xpath=...`...). Có thể
+thêm `nth`, `optional`, `timeout_ms`, `delay_ms`; với `tab`, đặt
+`empty_if_zero: true` (khi nhập JSON trên web; dùng `True` khi sửa `config.py`)
+để coi tab có 0 bản ghi là thành công thay vì lỗi.
+
+Trong mỗi tác vụ còn có `document_row_selector` (mặc định `tr.mat-row`) và
+`document_click_selector` để thích nghi khi cấu trúc dòng/cú click của DOffice
+khác nhau. Để trống selector click thì hệ thống dùng các selector dự phòng cũ.
+
+Ở cuối trang Cài đặt có form **Tạo tác vụ mới**. Tác vụ mới tự có thư mục PDF và
+sheet Excel riêng. Nút **Xóa tác vụ này** chỉ xóa cấu hình chạy: sheet Excel cũ
+và toàn bộ dữ liệu lịch sử vẫn được giữ, đồng thời tiếp tục hiển thị ở trang
+Excel để tra cứu.
 
 ---
 
@@ -682,7 +750,7 @@ WhatsApp/Zalo "không chính thức" (đăng nhập bằng quét QR như Baileys
 2. Gửi lệnh `/newbot`, đặt tên bot, đặt username (phải kết thúc bằng `bot`, vd
    `doffice_binh_bot`).
 3. BotFather trả về 1 chuỗi **token** dạng
-   `123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` – copy lại.
+   `<BOT_TOKEN>` – copy lại và giữ bí mật.
 4. Tìm đúng bot vừa tạo (theo username đã đặt), nhắn 1 tin bất kỳ (vd "hi") để
    bot "biết" cuộc trò chuyện với bạn tồn tại. Muốn nhận tin trong 1 nhóm thay
    vì tin nhắn riêng, add bot vào nhóm rồi nhắn 1 tin trong nhóm đó.
@@ -699,19 +767,21 @@ Telegram để tìm các cuộc trò chuyện gần đây, in ra Chat ID tương
 
 ### 15.3 Bật thông báo
 
-Điền vào `config.py`:
+Khuyến nghị điền vào `.env` (đặc biệt khi chạy Docker/NAS hoặc lưu code trên
+GitHub):
 
-```python
-ENABLE_TELEGRAM_NOTIFY = True
-TELEGRAM_BOT_TOKEN = "123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-TELEGRAM_CHAT_ID = "111222333"
-TELEGRAM_NOTIFY_ONLY_IF_NEW = False  # True = chỉ gửi khi có văn bản mới
+```dotenv
+DOFFICE_TELEGRAM_ENABLED=true
+DOFFICE_TELEGRAM_BOT_TOKEN=<BOT_TOKEN>
+DOFFICE_TELEGRAM_CHAT_ID=111222333
+DOFFICE_TELEGRAM_ONLY_IF_NEW=false
 ```
 
 **Hoặc** vào trang web **Cài đặt** &rsaquo; mục "Thông báo qua Telegram", điền
 Bot Token + Chat ID, bấm **"Gửi thử"** để kiểm tra ngay trước khi lưu (không
 cần đợi chạy thật 1 tác vụ mới biết cấu hình đúng hay sai), rồi bấm "Lưu cài
-đặt" — ghi thẳng vào `config.py` như mọi mục khác (mục 7.5).
+đặt" — ghi vào cấu hình máy đang chạy như mọi mục khác (mục 7.5). Không commit
+token hoặc file `.env` lên GitHub.
 
 ### 15.4 Hành vi
 

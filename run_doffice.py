@@ -1,9 +1,9 @@
 """
 DOffice Auto - diem vao chinh.
 
-Chon 1, 2 hoac ca 3 tac vu de chay (Van ban Chu tri - Da xu ly / Van ban Phoi hop
-- Cho xu ly / Cong viec Dang-Doan Phoi hop - Cho thuc hien). Chi mo/dang nhap
-trinh duyet 1 lan cho du chay bao nhieu tac vu.
+Chon mot hoac nhieu tac vu da cau hinh de chay. Chi mo/dang nhap trinh duyet
+1 lan cho du chay bao nhieu tac vu. Danh sach tac vu co the them/bot tai trang
+web Cai dat.
 
 Doc cau hinh truc tiep tu config.py - sua tay file nay hay sua qua trang web
 "Cai dat" deu la CUNG 1 file, khong bi lech giua CLI va web (xem

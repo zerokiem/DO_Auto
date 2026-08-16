@@ -12,7 +12,52 @@
 # =============================================================================
 #Requires -Version 5.1
 $ErrorActionPreference = 'Stop'
-Set-Location -Path $PSScriptRoot
+$releaseVersion = 'v1.1.0'
+$scriptRoot = $PSScriptRoot
+
+# Khi chay tu file trong repo: cai dat tai cho. Khi chay bang
+#   irm https://raw.githubusercontent.com/zerokiem/DO_Auto/v1.1.0/install.ps1 | iex
+# $PSScriptRoot rong, nen tu tai source release ve thu muc cai dat mac dinh.
+if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
+    $installDir = $env:DOFFICE_INSTALL_DIR
+    if ([string]::IsNullOrWhiteSpace($installDir)) {
+        $installDir = Join-Path $env:USERPROFILE 'DO_Auto'
+    }
+    $localInstaller = Join-Path $installDir 'install.ps1'
+    if (-not (Test-Path -LiteralPath $localInstaller)) {
+        if ((Test-Path -LiteralPath $installDir) -and
+            (Get-ChildItem -LiteralPath $installDir -Force -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+            throw "Thu muc cai dat da co du lieu nhung khong co install.ps1: $installDir"
+        }
+        $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("doffice-install-" + [guid]::NewGuid().ToString('N'))
+        $archive = Join-Path $tempRoot 'source.zip'
+        $expanded = Join-Path $tempRoot 'expanded'
+        New-Item -ItemType Directory -Path $expanded -Force | Out-Null
+        try {
+            $sourceUrl = "https://github.com/zerokiem/DO_Auto/archive/refs/tags/$releaseVersion.zip"
+            Write-Host "Tai DOffice Auto $releaseVersion ..." -ForegroundColor Cyan
+            Invoke-WebRequest -UseBasicParsing -Uri $sourceUrl -OutFile $archive
+            Expand-Archive -LiteralPath $archive -DestinationPath $expanded -Force
+            $sourceDir = Get-ChildItem -LiteralPath $expanded -Directory | Select-Object -First 1
+            if (-not $sourceDir) { throw 'Goi cai dat khong hop le.' }
+            New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+            Get-ChildItem -LiteralPath $sourceDir.FullName -Force | ForEach-Object {
+                Copy-Item -LiteralPath $_.FullName -Destination $installDir -Recurse -Force
+            }
+        } finally {
+            $resolvedTemp = [IO.Path]::GetFullPath($tempRoot)
+            $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+            if ($resolvedTemp.StartsWith($systemTemp, [StringComparison]::OrdinalIgnoreCase) -and
+                (Split-Path -Leaf $resolvedTemp).StartsWith('doffice-install-')) {
+                Remove-Item -LiteralPath $resolvedTemp -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+    & $localInstaller
+    return
+}
+
+Set-Location -LiteralPath $scriptRoot
 
 Write-Host "== DOffice Auto - cai dat tren Windows ==" -ForegroundColor Cyan
 
@@ -38,7 +83,7 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
     Write-Host "Tao moi truong ao .venv ..."
     & $pyExe @pyArgs -m venv .venv
 }
-$vpy = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+$vpy = Join-Path $scriptRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path $vpy)) {
     Write-Host "Tao .venv that bai. Kiem tra lai ban cai Python." -ForegroundColor Red
     exit 1

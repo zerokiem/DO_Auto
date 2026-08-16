@@ -42,6 +42,9 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
     current_index = 0
     documents: List[dict] = []
 
+    def metadata_is_empty(data: dict) -> bool:
+        return not any(data.get(field) for field in ("so_vb", "ngay_vb", "trich_yeu"))
+
     while processed < task.max_documents:
         print("\n" + "=" * 70)
         print(f"[{task.label}] Văn bản thứ {processed + 1} | row {current_index + 1} | đã ghi {processed}/{task.max_documents}")
@@ -57,7 +60,7 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
 
         try:
             row_index_to_pick = 0 if (task.enable_finish and task.always_pick_first_row_after_finish) else current_index
-            row = browser_nav.get_document_row(page, row_index_to_pick)
+            row = browser_nav.get_document_row(page, row_index_to_pick, task.document_row_selector)
         except Exception as e:
             print("❌ Không lấy được row văn bản:", e)
             print("🔄 Thử load lại danh sách một lần nữa...")
@@ -67,7 +70,7 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
             text_utils.wait(page, 2500)
             try:
                 row_index_to_pick = 0 if (task.enable_finish and task.always_pick_first_row_after_finish) else current_index
-                row = browser_nav.get_document_row(page, row_index_to_pick)
+                row = browser_nav.get_document_row(page, row_index_to_pick, task.document_row_selector)
             except Exception as e2:
                 print("❌ Vẫn không lấy được row văn bản sau khi reload:", e2)
                 text_utils.save_debug(page, task.debug_prefix, "cannot_get_document_row_after_reload")
@@ -80,6 +83,11 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
             data = extract.extract_document_info_from_row(row, mode=task.extract_mode)
             extract.print_document_info(data)
 
+            if metadata_is_empty(data):
+                print("❌ Không trích được Số VB/Ngày VB/Trích yếu; dừng trước khi tải PDF hoặc ghi Excel.")
+                text_utils.save_debug(page, task.debug_prefix, "empty_document_metadata")
+                break
+
             duplicate_key = excel_log.build_duplicate_key(data, cfg.DUPLICATE_CHECK_MODE)
             if duplicate_key and duplicate_key in existing_keys:
                 print(f"🛑 Văn bản đã có trong Excel: {data.get('so_vb', '')}")
@@ -89,16 +97,41 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
                 current_index += 1
                 continue
 
-            if not browser_nav.click_document_row(row, task.prefer_flag_icon, extract_mode=task.extract_mode):
+            if not browser_nav.click_document_row(
+                row,
+                task.prefer_flag_icon,
+                extract_mode=task.extract_mode,
+                document_click_selector=task.document_click_selector,
+            ):
                 print("Không mở được văn bản. Dừng để kiểm tra.")
                 break
         else:
-            if not browser_nav.click_document_row(row, task.prefer_flag_icon, extract_mode=task.extract_mode):
+            # Lay metadata dang hien tren danh sach truoc khi click. Mot so man
+            # hinh (Cong viec - Xem de biet) dieu huong sang trang moi khi click,
+            # khi do locator row cu khong con evaluate duoc.
+            data_before_open = extract.extract_document_info_from_row(row, mode=task.extract_mode)
+            if not browser_nav.click_document_row(
+                row,
+                task.prefer_flag_icon,
+                extract_mode=task.extract_mode,
+                document_click_selector=task.document_click_selector,
+            ):
                 print("Không mở được văn bản. Dừng để kiểm tra.")
                 break
 
-            data = extract.extract_document_info_from_row(row, mode=task.extract_mode)
+            data_after_open = extract.extract_document_info_from_row(row, mode=task.extract_mode)
+            data = {
+                field: data_after_open.get(field) or value
+                for field, value in data_before_open.items()
+            }
+            for field, value in data_after_open.items():
+                data.setdefault(field, value)
             extract.print_document_info(data)
+
+            if metadata_is_empty(data):
+                print("❌ Không trích được Số VB/Ngày VB/Trích yếu; dừng trước khi tải PDF hoặc ghi Excel.")
+                text_utils.save_debug(page, task.debug_prefix, "empty_document_metadata")
+                break
 
             duplicate_key = excel_log.build_duplicate_key(data, cfg.DUPLICATE_CHECK_MODE)
             if duplicate_key and duplicate_key in existing_keys:

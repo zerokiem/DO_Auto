@@ -14,7 +14,7 @@ Khong can dong vao code logic trong cac module khac.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -35,11 +35,39 @@ class TaskConfig:
     # --- Dieu huong menu DOffice ---
     sidebar_item: str = "Văn bản"  # "Văn bản" hoặc "Công việc"
     list_link: str = "Chờ xử lý"  # "Chờ xử lý" | "Đã xử lý" | "Chờ thực hiện"
-    tab_name: Optional[str] = None  # "Chủ trì" | "Phối hợp" | None neu la tab mac dinh
-    # Neu dat, dieu huong vao danh sach bang dung href thay vi text link. Can khi
-    # text link bi TRUNG (vd "Đã phát hành" co ca vbdi lan vbnb) khien click theo
-    # ten bi loi "strict mode violation". De trong "" thi dung text link nhu cu.
+    # Tab bat buoc voi extract_mode="directive". Ten co the la Chu tri/Phoi hop
+    # hoac Chua xu ly/Da xu ly tuy man hinh DOffice. published co the khong co tab.
+    tab_name: Optional[str] = None
+    # Neu dat, sau khi chon role se goto thang href nay va bo qua Sidebar/Tieu
+    # muc. Day la cach uu tien, dong thoi giai quyet text bi TRUNG (vd hai link
+    # "Xem de biet"). Chap nhan path /... hoac URL day du cung origin DOffice.
     list_link_href: str = ""
+
+    # --- Chuoi dieu huong co the tuy chinh ---
+    # Neu co du lieu, navigation_steps se thay the luong sidebar_item/list_link/
+    # tab_name co dinh ben tren. Moi buoc la dict, vi du:
+    # {
+    #   "name": "Mo Cong viec", "type": "sidebar", "value": "Cong viec"
+    # }
+    # {
+    #   "name": "Chon bo loc", "type": "selector",
+    #   "selector": "button[data-testid='filter']", "action": "click"
+    # }
+    # type ho tro: sidebar, link_text, link_href, tab, selector.
+    # action cua selector: click (mac dinh) hoac wait. Co the them optional,
+    # timeout_ms, delay_ms, nth va wait_for. Xem trang Cai dat de co mau JSON.
+    # De [] chi dung cho cau hinh cu; he thong se tu dung 3 truong legacy o tren.
+    navigation_steps: List[Dict[str, Any]] = field(default_factory=list)
+
+    # None giu tuong thich voi task da tao o ban truoc: co navigation_steps thi
+    # hieu la dang dung nang cao. False = dung 3 truong Sidebar/Tieu muc/Tab don
+    # gian; True = chay navigation_steps JSON.
+    use_advanced_navigation: Optional[bool] = None
+
+    # Selector danh sach va phan tu can click ben trong mot dong. Hai truong nay
+    # cho phep phu hop voi tai khoan/giao dien DOffice khac ma khong sua Python.
+    document_row_selector: str = "tr.mat-row"
+    document_click_selector: str = ""
 
     # --- Cach trich xuat du lieu tu dong danh sach ---
     #   "directive" (mac dinh): van ban chi dao (Chu tri/Phoi hop/Dang doan) - co

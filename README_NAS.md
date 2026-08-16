@@ -23,6 +23,20 @@ hoặc Tailscale `http://100.100.1.254:8877` (cả 2 đã test OK).
 | Lịch chạy tự động | **thread Python nền** ngay trong `run_web.py` (KHÔNG dùng cron) |
 | Đăng nhập DOffice | làm trên Windows, copy `state.json` lên NAS (NAS không có màn hình) |
 
+## Cài mới bằng một dòng lệnh
+
+Sau khi DSM đã cài Docker/Container Manager và tài khoản SSH có quyền dùng
+Docker, chạy (đổi `<user>`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zerokiem/DO_Auto/v1.1.0/install.sh | sudo env DOFFICE_INSTALL_DIR=/volume1/homes/<user>/Working/Programming/DO_Auto DOFFICE_DATA_HOST=/volume1/homes/<user>/Working/Van_ban bash
+```
+
+Script tải đúng release `v1.1.0`, tạo `.env`, build image, bật container và in
+trạng thái. Mở `http://<IP-NAS>:8877`; sau đó đăng nhập headless trên trang Cài
+đặt hoặc chép `playwright/.auth/state.json` từ Windows như phần dưới. Các bước
+thủ công tiếp theo vẫn hữu ích để bảo trì hoặc xử lý sự cố.
+
 ---
 
 ## Những gì đã sửa trong code

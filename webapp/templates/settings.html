@@ -9,7 +9,7 @@
   </div>
 
   {% if saved and not error %}
-  <div class="banner banner-success">Đã lưu cài đặt vào config.py.</div>
+  <div class="banner banner-success">{{ message or "Đã lưu cài đặt vào config.py." }}</div>
   {% elif error %}
   <div class="banner banner-danger">Không lưu được: {{ error }}</div>
   {% endif %}
@@ -97,8 +97,19 @@
 
     <hr class="divider">
 
+    <h2 class="section-title">Các tác vụ</h2>
+    <div class="tasks-settings-list">
     {% for key, task in tasks %}
-    <h2 class="section-title">{{ task.label }}</h2>
+    <details class="task-settings-item">
+    <summary>{{ task.label }}</summary>
+    <div class="task-settings-content">
+    <div class="field-row">
+      <label for="{{ key }}_label">Tên hiển thị tác vụ</label>
+      <input type="text" name="{{ key }}_label" id="{{ key }}_label" value="{{ task.label }}" required>
+    </div>
+    <div class="field-row">
+      <button type="submit" name="form_action" value="delete:{{ key }}" class="btn btn-danger-outline" onclick="return confirm('Xóa tác vụ này khỏi danh sách chạy?');">Xóa tác vụ này</button>
+    </div>
     <div class="field-row">
       <label class="switch">
         <input type="checkbox" name="{{ key }}_enabled" {{ 'checked' if task.enabled else '' }}>
@@ -109,6 +120,39 @@
       <label for="{{ key }}_role_pattern">Vai trò (role) trên DOffice</label>
       <input type="text" name="{{ key }}_role_pattern" id="{{ key }}_role_pattern" value="{{ task.role_pattern }}" placeholder="Để trống nếu tài khoản chỉ có 1 vai trò">
       <p class="field-hint">Gõ đúng chữ hiển thị trong menu "...Phòng ban:" trên DOffice, ví dụ "Phó Truyền tải điện" hoặc "Chi bộ 1".</p>
+    </div>
+    <div class="navigation-simple-card">
+      <div class="navigation-step-number">2–3</div>
+      <div class="field-row">
+        <label for="{{ key }}_list_link_href">Đường dẫn trực tiếp đến danh sách (khuyên dùng)</label>
+        <input type="text" name="{{ key }}_list_link_href" id="{{ key }}_list_link_href" value="{{ task.list_link_href }}" list="doffice-route-choices" placeholder="Chọn trong danh sách hoặc dán đường dẫn DOffice">
+        <p class="field-hint">Sau khi chọn Vai trò, hệ thống vào thẳng đường dẫn này và bỏ qua Sidebar/Tiểu mục. Danh sách gợi ý bên dưới được lấy trực tiếp từ DOffice.</p>
+        <details class="legacy-navigation-fields">
+          <summary>Cách cũ: dùng Mục Sidebar + Tiểu mục khi chưa có đường dẫn</summary>
+          <div class="field-row">
+            <label for="{{ key }}_sidebar_item">Mục Sidebar</label>
+            <input type="text" name="{{ key }}_sidebar_item" id="{{ key }}_sidebar_item" value="{{ task.sidebar_item }}" placeholder="Ví dụ: Công việc, Văn bản, Hồ sơ công việc">
+          </div>
+          <div class="field-row">
+            <label for="{{ key }}_list_link">Tiểu mục</label>
+            <input type="text" name="{{ key }}_list_link" id="{{ key }}_list_link" value="{{ task.list_link }}" placeholder="Ví dụ: Chờ giao việc, Đã giao việc, Chờ thực hiện">
+          </div>
+        </details>
+      </div>
+      <div class="navigation-step-number">4</div>
+      <div class="field-row">
+        <label for="{{ key }}_tab_name">Tab Văn bản</label>
+        <input type="text" class="tab-name-input" name="{{ key }}_tab_name" id="{{ key }}_tab_name" value="{{ task.tab_name or '' }}" placeholder="Ví dụ: Chủ trì, Phối hợp, Chưa xử lý, Đã xử lý" {{ 'required' if task.extract_mode == 'directive' else '' }}>
+        <p class="field-hint">Bắt buộc với dạng Văn bản/Công việc xử lý. Nhập đúng Tab thực tế trên màn hình; không chỉ giới hạn ở Chủ trì/Phối hợp.</p>
+      </div>
+    </div>
+    <div class="field-row">
+      <label for="{{ key }}_extract_mode">Dạng dòng văn bản</label>
+      <select class="extract-mode-select" data-tab-target="{{ key }}_tab_name" name="{{ key }}_extract_mode" id="{{ key }}_extract_mode">
+        <option value="directive" {{ 'selected' if task.extract_mode == 'directive' else '' }}>Văn bản/Công việc xử lý — tự nhận dạng nội dung, icon cờ hoặc Số VB</option>
+        <option value="published" {{ 'selected' if task.extract_mode == 'published' else '' }}>Văn bản đã phát hành — click ô trong dòng</option>
+      </select>
+      <p class="field-hint">Dạng xử lý tự nhận biết cả dòng văn bản cũ và dòng Công việc có Số VB ở đầu hàng. Hệ thống vẫn thử selector dự phòng nếu cấu trúc đầu tiên không khớp.</p>
     </div>
     <div class="field-row">
       <label for="{{ key }}_max_documents">Số văn bản tối đa mỗi lần chạy</label>
@@ -135,9 +179,10 @@
         <span>Hỏi xác nhận trước khi Kết thúc/Lưu (chỉ có tác dụng khi chạy bằng CLI, web luôn tắt mục này)</span>
       </label>
     </div>
-    <hr class="divider">
-
+    </div>
+    </details>
     {% endfor %}
+    </div>
 
     <h2 class="section-title">Đường dẫn hiển thị / Link mở file</h2>
     <div class="field-row">
@@ -185,6 +230,85 @@
 
     <button type="submit" class="btn btn-primary">Lưu cài đặt</button>
   </form>
+
+  <hr class="divider">
+  <details class="task-settings-item create-task-settings">
+  <summary>Tạo tác vụ mới</summary>
+  <div class="task-settings-content">
+  <p class="field-hint">Tạo tác vụ sẽ tự tạo một sheet Excel mới.</p>
+  <form method="post" class="settings-form">
+    <input type="hidden" name="form_action" value="create_task">
+    <div class="field-row">
+      <label for="new_key">Mã tác vụ</label>
+      <input type="text" name="new_key" id="new_key" pattern="[a-z][a-z0-9_]{0,49}" placeholder="Ví dụ: van_ban_noi_bo" required>
+      <p class="field-hint">Chỉ dùng chữ thường, số, dấu gạch dưới; mã này dùng cho CLI và lịch sử chạy.</p>
+    </div>
+    <div class="field-row">
+      <label for="new_label">Tên hiển thị</label>
+      <input type="text" name="new_label" id="new_label" placeholder="Ví dụ: Văn bản nội bộ - Chờ xử lý" required>
+    </div>
+    <div class="field-row">
+      <label for="new_role_pattern">Vai trò DOffice</label>
+      <input type="text" name="new_role_pattern" id="new_role_pattern" placeholder="Để trống nếu không cần đổi vai trò">
+    </div>
+    <div class="navigation-simple-card">
+      <div class="navigation-step-number">2–3</div>
+      <div class="field-row">
+        <label for="new_list_link_href">Đường dẫn trực tiếp đến danh sách (khuyên dùng)</label>
+        <input type="text" name="new_list_link_href" id="new_list_link_href" list="doffice-route-choices" placeholder="Chọn trong danh sách hoặc dán đường dẫn DOffice">
+        <p class="field-hint">Chọn một đường dẫn đã khảo sát. Nếu chưa có đường dẫn phù hợp, mở cách cũ bên dưới.</p>
+        <details class="legacy-navigation-fields">
+          <summary>Cách cũ: dùng Mục Sidebar + Tiểu mục</summary>
+          <div class="field-row">
+            <label for="new_sidebar_item">Mục Sidebar</label>
+            <input type="text" name="new_sidebar_item" id="new_sidebar_item" placeholder="Ví dụ: Công việc, Văn bản, Hồ sơ công việc">
+          </div>
+          <div class="field-row">
+            <label for="new_list_link">Tiểu mục</label>
+            <input type="text" name="new_list_link" id="new_list_link" placeholder="Ví dụ: Chờ giao việc, Đã giao việc, Chờ thực hiện">
+          </div>
+        </details>
+      </div>
+      <div class="navigation-step-number">4</div>
+      <div class="field-row">
+        <label for="new_tab_name">Tab Văn bản</label>
+        <input type="text" class="tab-name-input" name="new_tab_name" id="new_tab_name" placeholder="Ví dụ: Chủ trì, Phối hợp, Chưa xử lý, Đã xử lý" required>
+        <p class="field-hint">Bắt buộc với dạng Văn bản/Công việc xử lý.</p>
+      </div>
+    </div>
+    <div class="field-row">
+      <label for="new_extract_mode">Dạng dòng văn bản</label>
+      <select class="extract-mode-select" data-tab-target="new_tab_name" name="new_extract_mode" id="new_extract_mode">
+        <option value="directive">Văn bản/Công việc xử lý — tự nhận dạng nội dung, icon cờ hoặc Số VB</option>
+        <option value="published">Văn bản đã phát hành — click ô trong dòng</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label for="new_sheet_name">Tên sheet Excel</label>
+      <input type="text" name="new_sheet_name" id="new_sheet_name" placeholder="Ví dụ: Nội bộ" required>
+    </div>
+    <div class="field-row">
+      <label for="new_download_subdir">Thư mục con lưu PDF</label>
+      <input type="text" name="new_download_subdir" id="new_download_subdir" placeholder="Ví dụ: VB_Noi_bo">
+    </div>
+    <div class="field-row">
+      <label for="new_max_documents">Số văn bản tối đa mỗi lần chạy</label>
+      <input type="number" name="new_max_documents" id="new_max_documents" min="1" value="20">
+    </div>
+    <div class="field-row">
+      <label class="switch"><input type="checkbox" name="new_enable_download_pdf" checked><span>Tải PDF về máy</span></label>
+      <label class="switch"><input type="checkbox" name="new_enable_finish"><span>Bấm Kết thúc/Lưu sau khi tải</span></label>
+    </div>
+    <button type="submit" class="btn btn-primary">Tạo tác vụ và sheet Excel</button>
+  </form>
+  </div>
+  </details>
+
+  <datalist id="doffice-route-choices">
+    {% for route_label, route_href in route_choices %}
+    <option value="{{ route_href }}" label="{{ route_label }}"></option>
+    {% endfor %}
+  </datalist>
 </section>
 {% endblock %}
 

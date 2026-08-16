@@ -125,19 +125,27 @@ TASKS = {
         sidebar_item="Văn bản",
         list_link="Đã xử lý",
         tab_name="Chủ trì",
+        list_link_href="",
         supports_finish=False,  # khong bao gio dung Ket thuc - an mo 2 o do tren web Cai dat
         enable_finish=False,  # van ban da xu ly roi, khong can bam Ket thuc
         ask_confirm_before_finish=False,
         always_pick_first_row_after_finish=False,
         prefer_flag_icon=True,  # danh sach nay co icon co, click on dinh hon
         check_duplicate_before_open=True,  # kiem tra trung TRUOC khi mo van ban, do tiet kiem thoi gian
-        max_documents=20,
+        max_documents=147,
         enable_download_pdf=True,
         download_subdir="VB_Chu_tri_da_XL",
         sheet_name="Chủ trì",
         title_text="TỔNG HỢP CÁC VĂN BẢN CHỦ TRÌ ĐÃ XỬ LÝ",
         sheet_order=1,
+        navigation_steps=[{'name': 'Mở Văn bản', 'type': 'sidebar', 'value': 'Văn bản'},
+ {'name': 'Mở Đã xử lý', 'type': 'link_text', 'value': 'Đã xử lý'},
+ {'empty_if_zero': True, 'name': 'Chọn tab Chủ trì', 'type': 'tab', 'value': 'Chủ trì'}],
+        use_advanced_navigation=False,
         debug_prefix="chu_tri_da_xl",
+        document_row_selector="tr.mat-row",
+        document_click_selector="",
+        extract_mode="directive",
     ),
     "phoi_hop": TaskConfig(
         key="phoi_hop",
@@ -147,43 +155,59 @@ TASKS = {
         sidebar_item="Văn bản",
         list_link="Chờ xử lý",
         tab_name="Phối hợp",
+        list_link_href="/congviec/ld-xly-vb/ChoXL",
         enable_finish=True,
         ask_confirm_before_finish=False,
         always_pick_first_row_after_finish=True,
         prefer_flag_icon=False,
         check_duplicate_before_open=False,  # phai mo van ban thi thong tin chi dao moi hien du
-        max_documents=50,
+        max_documents=147,
         enable_download_pdf=True,
         download_subdir="VB_Phoi_hop",
         sheet_name="Phối hợp",
         title_text="TỔNG HỢP CÁC VĂN BẢN PHỐI HỢP",
         sheet_order=2,
+        navigation_steps=[{'name': 'Mở Văn bản', 'type': 'sidebar', 'value': 'Văn bản'},
+ {'name': 'Mở Chờ xử lý', 'type': 'link_text', 'value': 'Chờ xử lý'},
+ {'empty_if_zero': True, 'name': 'Chọn tab Phối hợp', 'type': 'tab', 'value': 'Phối hợp'}],
+        use_advanced_navigation=False,
         debug_prefix="vb_phoi_hop",
+        document_row_selector="tr.mat-row",
+        document_click_selector="",
+        extract_mode="directive",
     ),
     "dang_doan": TaskConfig(
         key="dang_doan",
-        label="Công việc Đảng/Đoàn/Công đoàn - Chờ thực hiện (Phối hợp)",
+        label="Công việc Đảng / Công đoàn - Phối hợp",
         enabled=True,
         role_pattern="Chi bộ 1",
         sidebar_item="Công việc",
         list_link="Chờ thực hiện",
         tab_name="Phối hợp",
+        list_link_href="/congviec/cviec-cvien-xuly/chothuchien",
         enable_finish=True,
         ask_confirm_before_finish=False,
         always_pick_first_row_after_finish=True,
         prefer_flag_icon=False,
         check_duplicate_before_open=False,
-        max_documents=50,
+        max_documents=147,
         enable_download_pdf=True,
         download_subdir="VB_Dang_doan_phoi_hop",
         sheet_name="Đảng - Đoàn",
         title_text="TỔNG HỢP CÁC VĂN BẢN ĐẢNG, CÔNG ĐOÀN ĐÃ XỬ LÝ",
         sheet_order=3,
+        navigation_steps=[{'name': 'Mở Công việc', 'type': 'sidebar', 'value': 'Công việc'},
+ {'name': 'Mở Chờ thực hiện', 'type': 'link_text', 'value': 'Chờ thực hiện'},
+ {'empty_if_zero': True, 'name': 'Chọn tab Phối hợp', 'type': 'tab', 'value': 'Phối hợp'}],
+        use_advanced_navigation=False,
         debug_prefix="dang_doan_phoi_hop",
+        document_row_selector="tr.mat-row",
+        document_click_selector="",
+        extract_mode="directive",
     ),
     "vb_duyet": TaskConfig(
         key="vb_duyet",
-        label="Văn bản đã duyệt - Đã phát hành",
+        label="Văn bản đã duyệt - Phát hành",
         enabled=True,
         role_pattern="Phó Truyền tải điện",
         sidebar_item="Văn bản",
@@ -200,13 +224,45 @@ TASKS = {
         always_pick_first_row_after_finish=False,
         prefer_flag_icon=False,
         check_duplicate_before_open=True,  # thong tin hien du tren dong danh sach
-        max_documents=2,  # tang len neu can tai bu backlog lan dau (vd qua trang Cai dat)
+        max_documents=149,  # tang len neu can tai bu backlog lan dau (vd qua trang Cai dat)
         enable_download_pdf=True,
         download_subdir="VB_duyet",
         sheet_name="Văn bản đã duyệt",
         title_text="TỔNG HỢP CÁC VĂN BẢN ĐÃ KÝ DUYỆT PHÁT HÀNH",
         sheet_order=4,
+        navigation_steps=[{'name': 'Mở Văn bản', 'type': 'sidebar', 'value': 'Văn bản'},
+ {'href': '/duthaovanban/danhsach/vbdi/phathanh', 'name': 'Mở Đã phát hành', 'type': 'link_href'}],
+        use_advanced_navigation=False,
         debug_prefix="vb_duyet",
+        document_row_selector="tr.mat-row",
+        document_click_selector="",
+    ),
+        "vb_de_biet": TaskConfig(
+        key="vb_de_biet",
+        label="Văn bản - Xem để biết",
+        enabled=True,
+        role_pattern="",
+        sidebar_item="Văn bản",
+        list_link="Xem để biết",
+        list_link_href="",
+        tab_name="Chưa xử lý",
+        navigation_steps=[],
+        use_advanced_navigation=False,
+        document_row_selector="tr.mat-row",
+        document_click_selector="",
+        # Xem de biet dung cau truc dong Cong viec (KY_HIEU_CV), khong phai
+        # cau truc Van ban da phat hanh. Dung directive de click So VB va tach
+        # rieng So VB/Ngay/Noi phat hanh/Trich yeu.
+        extract_mode="directive",
+        max_documents=2,
+        enable_download_pdf=True,
+        enable_finish=True,
+        download_subdir="VB_de_biet",
+        sheet_name="de_biet",
+        title_text="TỔNG HỢP VĂN BẢN - XEM ĐỂ BIẾT",
+        sheet_order=5,
+        debug_prefix="vb_de_biet",
+        ask_confirm_before_finish=False,
     ),
 }
 
@@ -226,7 +282,7 @@ TEST_MODE_PAUSE_BEFORE_CLOSE = True
 TEST_MODE_SLOW_MO_MS = 800
 
 # --- Tự động thêm bởi trang web Cài đặt (biến cấu hình mới từ bản cập nhật) ---
-ENABLE_TELEGRAM_NOTIFY = True
-TELEGRAM_BOT_TOKEN = "8825591535:AAGMvHrdPszpPBwKEvPI1hRLZtVewfRF6KM"
-TELEGRAM_CHAT_ID = "-1004475366544"
-TELEGRAM_NOTIFY_ONLY_IF_NEW = False
+ENABLE_TELEGRAM_NOTIFY = os.environ.get("DOFFICE_TELEGRAM_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
+TELEGRAM_BOT_TOKEN = os.environ.get("DOFFICE_TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("DOFFICE_TELEGRAM_CHAT_ID", "")
+TELEGRAM_NOTIFY_ONLY_IF_NEW = os.environ.get("DOFFICE_TELEGRAM_ONLY_IF_NEW", "").strip().lower() in {"1", "true", "yes", "on"}

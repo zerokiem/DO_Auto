@@ -30,6 +30,41 @@ app.jinja_env.globals["zip"] = zip
 run_manager = RunManager(base_config)
 login_manager = LoginManager(base_config)
 
+# Cac route da duyet truc tiep tren DOffice v2.4.0. Input tren web van cho go
+# tu do de khong khoa cung khi DOffice bo sung route moi.
+DOFFICE_ROUTE_CHOICES = [
+    ("Văn bản xử lý — Chờ xử lý", "/congviec/ld-xly-vb/ChoXL"),
+    ("Văn bản xử lý — Đã xử lý", "/congviec/ld-xly-vb/DaXL"),
+    ("Văn bản xử lý — Xem để biết", "/congviec/ld-xly-vb/XemDB"),
+    ("Văn bản xử lý — Chuyển nhầm", "/congviec/ld-xly-vb/ChuyenNham"),
+    ("Văn bản xử lý — Theo dõi", "/congviec/ld-xly-vb/TheoDoi"),
+    ("Công việc ban/phòng — Chờ giao việc", "/congviec/cviec-ldphong-xu-ly/chogiao"),
+    ("Công việc ban/phòng — Đã giao việc", "/congviec/cviec-ldphong-xu-ly/dagiao"),
+    ("Công việc ban/phòng — Xem để biết", "/congviec/cviec-ldphong-xu-ly/xemdb"),
+    ("Công việc ban/phòng — Danh sách chuyển nhầm", "/congviec/cviec-ldphong-xu-ly/chuyennham"),
+    ("Công việc ban/phòng — Duyệt hạn", "/congviec/cviec-ldphong-xu-ly/duyethan"),
+    ("Công việc ban/phòng — Theo dõi", "/congviec/cviec-ldphong-xu-ly/theodoi"),
+    ("Công việc cá nhân — Chờ thực hiện", "/congviec/cviec-cvien-xuly/chothuchien"),
+    ("Công việc cá nhân — Đang thực hiện", "/congviec/cviec-cvien-xuly/dangthuchien"),
+    ("Công việc cá nhân — Đã thực hiện", "/congviec/cviec-cvien-xuly/dathuchien"),
+    ("Công việc cá nhân — Xem để biết", "/congviec/cviec-cvien-xuly/xemdb"),
+    ("Công việc cá nhân — Theo dõi", "/congviec/cviec-cvien-xuly/theodoi"),
+    ("Văn bản đi — Chờ ký số", "/duthaovanban/danhsach/vbdi/choduyet"),
+    ("Văn bản đi — Đã duyệt", "/duthaovanban/danhsach/vbdi/daduyet"),
+    ("Văn bản đi — Đã phát hành", "/duthaovanban/danhsach/vbdi/phathanh"),
+    ("Văn bản đi — Trả lại", "/duthaovanban/danhsach/vbdi/tralai"),
+    ("Văn bản nội bộ — Chờ ký số", "/duthaovanban/danhsach/vbnb/choduyet"),
+    ("Văn bản nội bộ — Đã duyệt", "/duthaovanban/danhsach/vbnb/daduyet"),
+    ("Văn bản nội bộ — Đã phát hành", "/duthaovanban/danhsach/vbnb/phathanh"),
+    ("Văn bản nội bộ — Trả lại", "/duthaovanban/danhsach/vbnb/tralai"),
+    ("Hồ sơ — Danh mục hồ sơ", "/hstl/danh-muc-hso-nam"),
+    ("Hồ sơ — Công việc cá nhân", "/hstl/hso-cong-viec"),
+    ("Hồ sơ — Công việc phòng ban", "/hstl/hso-phong-ban"),
+    ("Hồ sơ — Lưu trữ cơ quan", "/hstl/hso-co-quan"),
+    ("Hồ sơ — Khai thác", "/hstl/khai-thac-hso"),
+    ("Hồ sơ — Tìm kiếm", "/hstl/tim-kiem-hso"),
+]
+
 
 @app.context_processor
 def inject_globals():
@@ -38,6 +73,54 @@ def inject_globals():
 
 def _ordered_tasks(cfg):
     return sorted(cfg.TASKS.items(), key=lambda kv: kv[1].sheet_order)
+
+
+def _validate_navigation_fields(label, advanced, steps, direct_href, sidebar, list_link, tab_name, extract_mode):
+    if advanced:
+        if not steps:
+            raise ValueError(f"Tác vụ '{label}' đã bật điều hướng nâng cao nhưng chưa có bước JSON.")
+        return
+    if not direct_href and (not sidebar or not list_link):
+        raise ValueError(f"Tác vụ '{label}' cần chọn Đường dẫn trực tiếp hoặc nhập cả Sidebar và Tiểu mục.")
+    if extract_mode == "directive" and not tab_name:
+        raise ValueError(
+            f"Tác vụ '{label}' cần nhập Tab Văn bản (ví dụ Chủ trì, Phối hợp, Chưa xử lý hoặc Đã xử lý)."
+        )
+
+
+def _all_excel_sheet_names(cfg) -> list[str]:
+    """Tra ve sheet cua task dang bat ke ca sheet cu cua task da xoa.
+
+    Xoa task chi xoa cau hinh chay, khong xoa lich su Excel. Hien cac sheet cu
+    tren web de nguoi dung van tra cuu duoc va co bang chung rang du lieu khong
+    bi mat.
+    """
+    names = [task.sheet_name for _, task in _ordered_tasks(cfg)]
+    excel_file = Path(cfg.EXCEL_FILE)
+    if not excel_file.exists():
+        return names
+    try:
+        from openpyxl import load_workbook
+
+        wb = load_workbook(excel_file, read_only=True)
+        for name in wb.sheetnames:
+            if name not in names:
+                names.append(name)
+        wb.close()
+    except Exception:
+        pass
+    return names
+
+
+def _parse_navigation_steps(raw: str, task_name: str) -> list[dict]:
+    """Kiem tra JSON truoc khi ghi vao config.py, bao loi de hieu tren giao dien."""
+    try:
+        steps = json.loads(raw or "[]")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Chuỗi bước của '{task_name}' không phải JSON hợp lệ: {e.msg} (dòng {e.lineno}).") from e
+    if not isinstance(steps, list) or any(not isinstance(step, dict) for step in steps):
+        raise ValueError(f"Chuỗi bước của '{task_name}' phải là mảng JSON gồm các object.")
+    return steps
 
 
 def _can_login_interactively() -> bool:
@@ -238,8 +321,7 @@ def view_log(filename):
 @app.route("/excel")
 def excel_page():
     effective_cfg = settings_store.build_effective_config(base_config)
-    tasks = _ordered_tasks(effective_cfg)
-    sheet_names = [t.sheet_name for _, t in tasks]
+    sheet_names = _all_excel_sheet_names(effective_cfg)
 
     sheet = request.args.get("sheet")
     if not sheet or sheet not in sheet_names:
@@ -329,6 +411,64 @@ def settings_page():
     effective_cfg = settings_store.build_effective_config(base_config)
 
     if request.method == "POST":
+        form_action = request.form.get("form_action", "save")
+        try:
+            if form_action.startswith("delete:"):
+                task_key = form_action.split(":", 1)[1]
+                settings_store.remove_task(task_key)
+                settings_store.reload_config(base_config)
+                # Chu y: khong goi bat ky ham xoa workbook/sheet o day.
+                return redirect(url_for("settings_page", saved=1, message="Đã xóa tác vụ khỏi danh sách chạy."))
+
+            if form_action == "create_task":
+                new_label = request.form.get("new_label", "").strip()
+                new_key = request.form.get("new_key", "").strip()
+                new_steps = _parse_navigation_steps(request.form.get("new_navigation_steps", "[]"), new_label or new_key)
+                new_advanced = request.form.get("new_use_advanced_navigation") == "on"
+                new_sidebar = request.form.get("new_sidebar_item", "").strip()
+                new_list_link = request.form.get("new_list_link", "").strip()
+                new_direct_href = request.form.get("new_list_link_href", "").strip()
+                new_tab_name = request.form.get("new_tab_name", "").strip()
+                new_extract_mode = request.form.get("new_extract_mode", "directive").strip()
+                _validate_navigation_fields(
+                    new_label or new_key,
+                    new_advanced,
+                    new_steps,
+                    new_direct_href,
+                    new_sidebar,
+                    new_list_link,
+                    new_tab_name,
+                    new_extract_mode,
+                )
+                settings_store.add_task(
+                    {
+                        "key": new_key,
+                        "label": new_label,
+                        "role_pattern": request.form.get("new_role_pattern", "").strip(),
+                        "sidebar_item": new_sidebar,
+                        "list_link": new_list_link,
+                        "list_link_href": new_direct_href,
+                        "tab_name": new_tab_name,
+                        "navigation_steps": new_steps,
+                        "use_advanced_navigation": new_advanced,
+                        "document_row_selector": request.form.get("new_document_row_selector", "tr.mat-row").strip(),
+                        "document_click_selector": request.form.get("new_document_click_selector", "").strip(),
+                        "extract_mode": new_extract_mode,
+                        "max_documents": request.form.get("new_max_documents", 20),
+                        "download_subdir": request.form.get("new_download_subdir", "").strip(),
+                        "sheet_name": request.form.get("new_sheet_name", "").strip(),
+                        "title_text": request.form.get("new_title_text", "").strip(),
+                        "enable_download_pdf": request.form.get("new_enable_download_pdf") == "on",
+                        "enable_finish": request.form.get("new_enable_finish") == "on",
+                    }
+                )
+                settings_store.reload_config(base_config)
+                new_cfg = settings_store.build_effective_config(base_config)
+                excel_log.ensure_all_sheets(new_cfg.EXCEL_FILE, new_cfg.TASKS)
+                return redirect(url_for("settings_page", saved=1, message="Đã tạo tác vụ và sheet Excel mới."))
+        except Exception as e:
+            return redirect(url_for("settings_page", error=str(e)))
+
         doffice_url = request.form.get("doffice_url", "").strip()
         common_updates = {
             "STOP_WHEN_DUPLICATE_FOUND": request.form.get("stop_when_duplicate_found") == "on",
@@ -353,25 +493,63 @@ def settings_page():
 
         error = None
         try:
-            settings_store.update_common_fields(common_updates)
+            task_updates = {}
             for key, eff_task in effective_cfg.TASKS.items():
                 try:
                     max_docs = int(request.form.get(f"{key}_max_documents") or eff_task.max_documents)
                 except (TypeError, ValueError):
                     max_docs = eff_task.max_documents
-
-                settings_store.update_task_fields(
-                    key,
-                    {
-                        "enabled": request.form.get(f"{key}_enabled") == "on",
-                        "role_pattern": request.form.get(f"{key}_role_pattern", eff_task.role_pattern).strip(),
-                        "max_documents": max_docs,
-                        "enable_finish": request.form.get(f"{key}_enable_finish") == "on",
-                        "enable_download_pdf": request.form.get(f"{key}_enable_download_pdf") == "on",
-                        "ask_confirm_before_finish": request.form.get(f"{key}_ask_confirm_before_finish") == "on",
-                    },
+                sidebar_item = request.form.get(f"{key}_sidebar_item", eff_task.sidebar_item).strip()
+                list_link = request.form.get(f"{key}_list_link", eff_task.list_link).strip()
+                direct_href = request.form.get(f"{key}_list_link_href", eff_task.list_link_href).strip()
+                tab_name = request.form.get(f"{key}_tab_name", eff_task.tab_name or "").strip()
+                extract_mode = request.form.get(f"{key}_extract_mode", eff_task.extract_mode).strip()
+                use_advanced_navigation = request.form.get(f"{key}_use_advanced_navigation") == "on"
+                navigation_steps = _parse_navigation_steps(
+                    request.form.get(f"{key}_navigation_steps", json.dumps(eff_task.navigation_steps, ensure_ascii=False)),
+                    eff_task.label,
                 )
+                _validate_navigation_fields(
+                    eff_task.label,
+                    use_advanced_navigation,
+                    navigation_steps,
+                    direct_href,
+                    sidebar_item,
+                    list_link,
+                    tab_name,
+                    extract_mode,
+                )
+                task_updates[key] = {
+                    "label": request.form.get(f"{key}_label", eff_task.label).strip(),
+                    "enabled": request.form.get(f"{key}_enabled") == "on",
+                    "role_pattern": request.form.get(f"{key}_role_pattern", eff_task.role_pattern).strip(),
+                    "sidebar_item": sidebar_item,
+                    "list_link": list_link,
+                    "list_link_href": direct_href,
+                    "tab_name": tab_name or None,
+                    "navigation_steps": navigation_steps,
+                    "use_advanced_navigation": use_advanced_navigation,
+                    "document_row_selector": request.form.get(
+                        f"{key}_document_row_selector", eff_task.document_row_selector
+                    ).strip(),
+                    "document_click_selector": request.form.get(
+                        f"{key}_document_click_selector", eff_task.document_click_selector
+                    ).strip(),
+                    "extract_mode": extract_mode,
+                    "max_documents": max(1, max_docs),
+                    "enable_finish": request.form.get(f"{key}_enable_finish") == "on",
+                    "enable_download_pdf": request.form.get(f"{key}_enable_download_pdf") == "on",
+                    "ask_confirm_before_finish": request.form.get(f"{key}_ask_confirm_before_finish") == "on",
+                    "download_subdir": request.form.get(f"{key}_download_subdir", eff_task.download_subdir).strip(),
+                    "sheet_name": request.form.get(f"{key}_sheet_name", eff_task.sheet_name).strip(),
+                    "title_text": request.form.get(f"{key}_title_text", eff_task.title_text).strip(),
+                }
+            settings_store.update_common_fields(common_updates)
+            for key, updates in task_updates.items():
+                settings_store.update_task_fields(key, updates)
             settings_store.reload_config(base_config)
+            refreshed_cfg = settings_store.build_effective_config(base_config)
+            excel_log.ensure_all_sheets(refreshed_cfg.EXCEL_FILE, refreshed_cfg.TASKS)
         except Exception as e:
             error = str(e)
 
@@ -395,15 +573,18 @@ def settings_page():
         "DISPLAY_BASE_URL_OVERRIDE": effective_cfg.DISPLAY_BASE_URL_OVERRIDE,
     }
     saved = request.args.get("saved") == "1"
+    message = request.args.get("message", "")
     error = request.args.get("error")
     return render_template(
         "settings.html",
         tasks=tasks,
         common=common,
         saved=saved,
+        message=message,
         error=error,
         auth=_auth_state_info(effective_cfg),
         login_status=login_manager.status(),
+        route_choices=DOFFICE_ROUTE_CHOICES,
         # Nut "Dang nhap lai" can mo Chromium THAT tren may dang chay server
         # nay - tren Linux/Docker (NAS/Pi) khong co man hinh (DISPLAY) se luon
         # loi, xem do_auto/login_flow.py. Bao truoc thay vi de bam xong moi biet.
