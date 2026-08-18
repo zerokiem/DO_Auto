@@ -69,7 +69,10 @@ DOFFICE_ROUTE_CHOICES = [
 
 @app.context_processor
 def inject_globals():
-    return {"current_year": datetime.now().year}
+    return {
+        "current_year": datetime.now().year,
+        "app_version": getattr(base_config, "APP_VERSION", "dev"),
+    }
 
 
 def _ordered_tasks(cfg):
@@ -167,6 +170,25 @@ def _read_sheet_preview(excel_file: Path, sheet_name: str, limit=300):
     tail = list(tail)
     tail.reverse()  # moi nhat len tren
     return excel_log.HEADERS, tail, total
+
+
+def _dashboard_file_link(folder: str, filename: str, cfg) -> str:
+    """Tra link PDF an toan cho bang Tong hop tren web.
+
+    Chrome/Edge chan file:// khi link nam trong mot trang http://, nen Windows
+    khong the mo PDF bang hyperlink file truc tiep tu dashboard. Khi file nam
+    duoi thu muc du lieu hien tai, phuc vu no qua endpoint /vb/ cua chinh app.
+    Docker/NAS van uu tien URL public/Tailscale neu da cau hinh.
+    """
+    if getattr(cfg, "DISPLAY_BASE_URL", ""):
+        return excel_log.build_file_link(folder, filename, cfg.DISPLAY_BASE_URL)
+    try:
+        relative = Path(folder).relative_to(Path(cfg.DOWNLOAD_BASE_DIR)) / filename
+        return url_for("serve_vb", relpath=relative.as_posix())
+    except ValueError:
+        # Lich su Excel cu co the tro toi thu muc khac; giu link file cu thay vi
+        # do mat kha nang mo file trong truong hop khong the xac dinh duong dan.
+        return excel_log.build_file_link(folder, filename, "")
 
 
 @app.route("/")
@@ -362,7 +384,7 @@ def excel_page():
                 file_links.append(None)
                 continue
             folder = str(row[folder_idx] or "")
-            file_links.append(excel_log.build_file_link(folder, fname, effective_cfg.DISPLAY_BASE_URL))
+            file_links.append(_dashboard_file_link(folder, fname, effective_cfg))
 
     return render_template(
         "excel_view.html",

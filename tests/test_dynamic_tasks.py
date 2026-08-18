@@ -14,9 +14,17 @@ from openpyxl import Workbook, load_workbook
 
 from do_auto import browser_nav, excel_log, extract, finish_doc, settings_store
 from do_auto.task_types import TaskConfig
+from webapp.app import _dashboard_file_link, app
 
 
 class DynamicTaskSettingsTests(unittest.TestCase):
+    def test_dashboard_file_link_uses_internal_pdf_route_for_local_files(self):
+        base = Path("C:/doffice-data")
+        cfg = SimpleNamespace(DOWNLOAD_BASE_DIR=base, DISPLAY_BASE_URL="")
+        with app.test_request_context():
+            link = _dashboard_file_link(str(base / "VB_phoi_hop"), "van-ban.pdf", cfg)
+        self.assertEqual(link, "/vb/VB_phoi_hop/van-ban.pdf")
+
     def test_download_dir_override_rebases_all_default_output_files(self):
         old_base = Path("C:/old-doffice-data")
         new_base = Path("C:/new-doffice-data")

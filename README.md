@@ -158,8 +158,8 @@ dùng chung, chỉ cần sửa nếu DOffice đổi giao diện (xem mục 13).
 | `vb_duyet` | Văn bản đã duyệt – Đã phát hành | Văn bản → Đã phát hành | Không (văn bản đã phát hành) |
 | `vb_de_biet` | Văn bản – Xem để biết | Văn bản → Xem để biết → tab Chưa xử lý | Có |
 
-Sheet Excel tương ứng: **Chủ trì**, **Phối hợp**, **Đảng - Đoàn**, **Văn bản đã duyệt**
-và **de_biet** (nếu bạn đã
+Mặc định bản mới có 2 sheet Excel: **Phối hợp** và **Xem để biết**. Bạn có thể
+tạo thêm tác vụ/sheet trên trang Cài đặt (nếu bạn đã
 có sheet với tên cũ `Chu_tri`/`Phoi_hop`/`Dang_doan` từ bản trước, lần chạy đầu
 tiên với bản này sẽ **tự đổi tên sheet cũ** sang tên mới, giữ nguyên toàn bộ dữ
 liệu, không tạo sheet trống mới).
@@ -237,7 +237,7 @@ ROLE_BUTTON_NAME_HINT = ""
 
 Ý nghĩa từng dòng giống hệt bản cũ (xem mục 10 – các biến vẫn quen thuộc), chỉ
 khác `DOWNLOAD_DIR`/`LOG_FILE` giờ dùng chung `DOWNLOAD_BASE_DIR`/`EXCEL_FILE`
-cho cả 3 tác vụ, mỗi tác vụ tự có thư mục con và sheet riêng. `HISTORY_DB` và
+cho mọi tác vụ, mỗi tác vụ tự có thư mục con và sheet riêng. `HISTORY_DB` và
 `LOGS_DIR` là 2 biến mới, phục vụ trang Lịch sử trên web (mục 7.3).
 
 ### 5.2 Vai trò (role) – linh hoạt cho người dùng khác, không riêng gì 1 người
@@ -386,7 +386,7 @@ python run_doffice.py
 Nhập số (có thể chọn nhiều, cách nhau bằng dấu phẩy, ví dụ 1,3):
 ```
 
-Gõ `4` để chạy cả 3, hoặc ví dụ `1,3` để chạy 2 trong 3 tác vụ. Chương trình
+Chọn số tương ứng để chạy một hay nhiều tác vụ. Chương trình
 chỉ mở/đăng nhập trình duyệt **1 lần** dù chọn bao nhiêu tác vụ.
 
 ### 6.2 Chạy trực tiếp bằng tham số (không cần menu – dùng cho script/scheduler)
@@ -440,7 +440,7 @@ liên tục kể cả khi không mở terminal, xem mục 7.8.
 - Mỗi tác vụ hiện là 1 thẻ: đường dẫn menu DOffice, vai trò đang dùng, số văn
   bản tối đa, và **lần chạy gần nhất** (thành công/lỗi, thời điểm, số văn bản
   ghi mới) – lấy từ trang Lịch sử.
-- Tick chọn 1, vài, hoặc cả 3 tác vụ rồi bấm **"Chạy các tác vụ đã chọn"**.
+- Tick chọn một, vài, hoặc toàn bộ tác vụ rồi bấm **"Chạy các tác vụ đã chọn"**.
 - Có banner cảnh báo nếu **chưa có phiên đăng nhập** hoặc **phiên đã lưu quá 7
   ngày**, cùng nút **"Đăng nhập lại"** ngay bên dưới (mục 7.7).
 
@@ -477,7 +477,7 @@ ngay trên web, không cần mở thư mục `LOGS_DIR` bằng tay.
 
 ### 7.4 Trang Excel (`/excel`)
 
-Xem trực tiếp dữ liệu 3 sheet (mặc định 50 dòng gần nhất mỗi sheet, mới nhất ở
+Xem trực tiếp dữ liệu các sheet (mặc định 50 dòng gần nhất mỗi sheet, mới nhất ở
 trên - chọn lại 20/50/100/200/300/500 dòng hoặc "Tất cả" bằng dropdown), có ô
 tìm kiếm lọc theo bất kỳ cột nào, và nút **Tải file Excel** để tải nguyên file
 `.xlsx` về xem đầy đủ/chỉnh sửa. Bảng có khung cuộn riêng (không cuộn theo cả
@@ -675,7 +675,7 @@ Gợi ý cấu hình theo chế độ (giống bản cũ):
 ## 11. Kết quả đầu ra
 
 - PDF: `DOWNLOAD_BASE_DIR\<download_subdir>\yymmdd-soVB - tên file.pdf`
-- Excel: 1 file `EXCEL_FILE`, 3 sheet `Chủ trì` / `Phối hợp` / `Đảng - Đoàn`, cột
+- Excel: 1 file `EXCEL_FILE`, mỗi tác vụ một sheet, cột
   giống hệt bản cũ (STT, Số VB, Ngày VB, Nơi phát hành, Trích yếu, Người chỉ
   đạo, Thời gian chỉ đạo *(ẩn)*, Nội dung chỉ đạo, Chủ trì, Phối hợp, Thư mục
   lưu, Tên file lưu *(có hyperlink)*, Thời gian lưu). Xem nhanh trên web ở

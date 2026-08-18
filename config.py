@@ -13,6 +13,9 @@ from pathlib import Path
 
 from do_auto.task_types import TaskConfig
 
+APP_VERSION = "1.1.2"
+BROWSER_VIEWPORT = {"width": 1280, "height": 720}
+
 # ----------------------------------------------------------------------------------
 # 1) CAU HINH CHUNG - ap dung cho moi tac vu
 # ----------------------------------------------------------------------------------
@@ -46,7 +49,7 @@ DOWNLOAD_BASE_DIR = Path(
 # vi du http://100.100.1.254:8877/vb hoac URL Tailscale tuong ung.
 DISPLAY_BASE_URL = os.environ.get("DOFFICE_DISPLAY_URL") or ""
 
-# 1 file Excel duy nhat, gom du lieu cua ca 3 tac vu, moi tac vu 1 sheet rieng
+# 1 file Excel duy nhat, gom du lieu cua cac tac vu, moi tac vu 1 sheet rieng
 # (xem sheet_name trong tung TaskConfig ben duoi).
 EXCEL_FILE = DOWNLOAD_BASE_DIR / "Tong_hop_DOffice.xlsx"
 
@@ -104,7 +107,7 @@ ROLE_BUTTON_NAME_HINT = ""
 #    (khong hien menu chon) thi de "".
 # ----------------------------------------------------------------------------------
 
-TASKS = {
+LEGACY_TASKS = {
     "chu_tri": TaskConfig(
         key="chu_tri",
         label="Văn bản Chủ trì - Đã xử lý",
@@ -254,6 +257,44 @@ TASKS = {
     ),
 }
 
+
+# ----------------------------------------------------------------------------------
+# TAC VU MAC DINH CHO BAN PHAT HANH MOI. Cac tac vu cu o tren duoc giu trong file
+# de nguoi dang nang cap co the tham chieu, nhung khong nam trong danh sach chay.
+TASKS = {
+    "vb_phoi_hop": TaskConfig(
+        key="vb_phoi_hop",
+        label="Văn bản - Phối hợp",
+        role_pattern="Tổ Tổng hợp",
+        list_link_href="/congviec/cviec-cvien-xuly/chothuchien",
+        tab_name="Phối hợp",
+        extract_mode="directive",
+        max_documents=2,
+        enable_download_pdf=True,
+        enable_finish=True,
+        download_subdir="VB_phoi_hop",
+        sheet_name="Phối hợp",
+        title_text="TỔNG HỢP VĂN BẢN - PHỐI HỢP",
+        sheet_order=1,
+        debug_prefix="vb_phoi_hop",
+    ),
+    "vb_xem_db": TaskConfig(
+        key="vb_xem_db",
+        label="Văn bản - Xem để biết",
+        role_pattern="Tổ Tổng hợp",
+        list_link_href="/congviec/cviec-cvien-xuly/xemdb",
+        tab_name="Chưa xử lý",
+        extract_mode="directive",
+        max_documents=2,
+        enable_download_pdf=True,
+        enable_finish=True,
+        download_subdir="VB_de_biet",
+        sheet_name="Xem để biết",
+        title_text="TỔNG HỢP VĂN BẢN - XEM ĐỂ BIẾT",
+        sheet_order=2,
+        debug_prefix="vb_xem_db",
+    ),
+}
 
 # ----------------------------------------------------------------------------------
 # 3) CHE DO TEST AN TOAN

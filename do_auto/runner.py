@@ -269,12 +269,17 @@ def run_selected_tasks(
             # Tren Linux/Docker (NAS), Chromium chay bang user root trong container
             # can --no-sandbox; /dev/shm trong container thuong nho nen them
             # --disable-dev-shm-usage de tranh crash tab. Tren Windows khong can.
+            viewport = getattr(cfg, "BROWSER_VIEWPORT", {"width": 1280, "height": 720})
             launch_args = ["--no-sandbox", "--disable-dev-shm-usage"] if sys.platform != "win32" else []
+            # Giu cua so Chromium nam gon trong man hinh pho bien 1366x768.
+            # --window-size can thiet cho che do hien cua so; viewport dung cho
+            # ca che do an va layout trang ben trong Chromium.
+            launch_args.append(f"--window-size={viewport['width']},{viewport['height']}")
             browser = p.chromium.launch(headless=headless, slow_mo=cfg.SLOW_MO_MS, args=launch_args)
             context = browser.new_context(
                 storage_state=str(cfg.AUTH_STATE),
                 accept_downloads=True,
-                viewport={"width": 1600, "height": 900},
+                viewport=viewport,
             )
             page = context.new_page()
 

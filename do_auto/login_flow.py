@@ -50,8 +50,9 @@ def run_interactive_login(cfg, ready_event: threading.Event, on_log: Callable[[s
 
     on_log(f"Đang mở Chromium để đăng nhập DOffice: {cfg.DOFFICE_URL}")
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context(viewport={"width": 1600, "height": 900})
+        viewport = getattr(cfg, "BROWSER_VIEWPORT", {"width": 1280, "height": 720})
+        browser = p.chromium.launch(headless=False, args=[f"--window-size={viewport['width']},{viewport['height']}"])
+        context = browser.new_context(viewport=viewport)
         page = context.new_page()
         page.goto(cfg.DOFFICE_URL, wait_until="domcontentloaded")
 
@@ -164,8 +165,9 @@ def run_headless_login(
     try:
         on_log(f"Đang mở trang đăng nhập DOffice: {cfg.DOFFICE_URL}")
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(viewport={"width": 1600, "height": 900})
+            viewport = getattr(cfg, "BROWSER_VIEWPORT", {"width": 1280, "height": 720})
+            browser = p.chromium.launch(headless=True, args=[f"--window-size={viewport['width']},{viewport['height']}"])
+            context = browser.new_context(viewport=viewport)
             page = context.new_page()
             page.goto(cfg.DOFFICE_URL, wait_until="domcontentloaded")
 

@@ -19,7 +19,7 @@
     <nav class="topnav">
       <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Bảng điều khiển</a>
       <a href="{{ url_for('history_page') }}" class="{{ 'active' if request.endpoint == 'history_page' else '' }}">Lịch sử</a>
-      <a href="{{ url_for('excel_page') }}" class="{{ 'active' if request.endpoint == 'excel_page' else '' }}">Excel</a>
+      <a href="{{ url_for('excel_page') }}" class="{{ 'active' if request.endpoint == 'excel_page' else '' }}">Tổng hợp</a>
       <a href="{{ url_for('scheduler_page') }}" class="{{ 'active' if request.endpoint == 'scheduler_page' else '' }}">Lịch chạy</a>
       <a href="{{ url_for('settings_page') }}" class="{{ 'active' if request.endpoint == 'settings_page' else '' }}">Cài đặt</a>
     </nav>
@@ -31,7 +31,7 @@
 
   <footer class="foot">
     <p>Chạy cục bộ trên máy này &middot; không có xác thực đăng nhập riêng &middot; chỉ dùng trong mạng nội bộ/Tailscale tin cậy</p>
-    <p>&copy; {{ current_year }} Nguyễn Xuân Bình</p>
+    <p>&copy; {{ current_year }} zero &middot; Phiên bản {{ app_version }}</p>
   </footer>
 </div>
 {% block scripts %}{% endblock %}
