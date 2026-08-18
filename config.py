@@ -13,7 +13,7 @@ from pathlib import Path
 
 from do_auto.task_types import TaskConfig
 
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.1.3"
 BROWSER_VIEWPORT = {"width": 1280, "height": 720}
 
 # ----------------------------------------------------------------------------------

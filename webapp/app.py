@@ -20,7 +20,7 @@ from urllib.parse import urljoin
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_file, url_for
 
 import config as base_config
-from do_auto import excel_log, history, scheduler as scheduler_mod, settings_store
+from do_auto import APP_VERSION, excel_log, history, scheduler as scheduler_mod, settings_store
 from webapp.login_manager import LoginManager
 from webapp.run_manager import RunManager
 
@@ -71,7 +71,7 @@ DOFFICE_ROUTE_CHOICES = [
 def inject_globals():
     return {
         "current_year": datetime.now().year,
-        "app_version": getattr(base_config, "APP_VERSION", "dev"),
+        "app_version": APP_VERSION,
     }
 
 

@@ -10,3 +10,5 @@ Cac module:
 - finish_doc    : bam Ket thuc nhanh + Luu
 - runner        : vong lap chinh + dieu phoi nhieu tac vu trong 1 phien trinh duyet
 """
+
+APP_VERSION = "1.1.3"
