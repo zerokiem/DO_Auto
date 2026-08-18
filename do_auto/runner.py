@@ -170,14 +170,10 @@ def run_task(page, task: TaskConfig, cfg) -> TaskResult:
                 if cfg.STOP_WHEN_DUPLICATE_FOUND:
                     print("Dừng vì gặp tên file trùng.")
                     break
-            data["thu_muc_luu"] = excel_log.to_display_folder(
-                saved_file.parent, cfg.DOWNLOAD_BASE_DIR, cfg.DISPLAY_BASE_DIR
-            )
+            data["thu_muc_luu"] = str(saved_file.parent)
             data["ten_file_luu"] = saved_file.name
         else:
-            data["thu_muc_luu"] = excel_log.to_display_folder(
-                download_dir, cfg.DOWNLOAD_BASE_DIR, cfg.DISPLAY_BASE_DIR
-            )
+            data["thu_muc_luu"] = str(download_dir)
             data["ten_file_luu"] = ""
 
         data["thoi_gian_luu"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")

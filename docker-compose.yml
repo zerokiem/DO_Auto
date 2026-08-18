@@ -22,8 +22,7 @@ services:
       # Trong container, du lieu luon o /data (khong doi). Doi cho luu THAT tren
       # may chu bang DOFFICE_DATA_HOST trong .env, khong phai bien nay.
       - DOFFICE_DATA_DIR=/data
-      # (Tuy chon) duong dan hien thi trong Excel + link mo file - xem .env.example.
-      - DOFFICE_DISPLAY_DIR=${DOFFICE_DISPLAY_DIR:-}
+      # (Tuy chon) URL public de hyperlink PDF mo qua web/Tailscale.
       - DOFFICE_DISPLAY_URL=${DOFFICE_DISPLAY_URL:-}
       - DOFFICE_TELEGRAM_ENABLED=${DOFFICE_TELEGRAM_ENABLED:-false}
       - DOFFICE_TELEGRAM_BOT_TOKEN=${DOFFICE_TELEGRAM_BOT_TOKEN:-}

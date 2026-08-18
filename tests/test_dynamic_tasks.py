@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
 
 from openpyxl import Workbook, load_workbook
 
@@ -16,6 +17,44 @@ from do_auto.task_types import TaskConfig
 
 
 class DynamicTaskSettingsTests(unittest.TestCase):
+    def test_download_dir_override_rebases_all_default_output_files(self):
+        old_base = Path("C:/old-doffice-data")
+        new_base = Path("C:/new-doffice-data")
+        base_cfg = SimpleNamespace(
+            AUTH_STATE=Path("playwright/.auth/state.json"),
+            DOWNLOAD_BASE_DIR=old_base,
+            DOWNLOAD_BASE_DIR_OVERRIDE=str(new_base),
+            DISPLAY_BASE_DIR=r"S:\Mapped-but-not-actual",
+            EXCEL_FILE=old_base / "Tong_hop_DOffice.xlsx",
+            HISTORY_DB=old_base / "doffice_auto_history.jsonl",
+            LOGS_DIR=old_base / "logs",
+            TASKS={},
+        )
+
+        effective = settings_store.build_effective_config(base_cfg)
+
+        self.assertEqual(effective.DOWNLOAD_BASE_DIR, new_base)
+        self.assertEqual(effective.DISPLAY_BASE_DIR, str(new_base))
+        self.assertEqual(effective.EXCEL_FILE, new_base / "Tong_hop_DOffice.xlsx")
+        self.assertEqual(effective.HISTORY_DB, new_base / "doffice_auto_history.jsonl")
+        self.assertEqual(effective.LOGS_DIR, new_base / "logs")
+
+    def test_download_dir_override_can_be_written_to_older_config(self):
+        original_path = settings_store.CONFIG_PATH
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_copy = Path(temp_dir) / "config.py"
+            shutil.copy2(original_path, config_copy)
+            settings_store.CONFIG_PATH = config_copy
+            try:
+                settings_store.update_common_fields(
+                    {"DOWNLOAD_BASE_DIR_OVERRIDE": r"D:\DOffice_Data"}
+                )
+                source = config_copy.read_text(encoding="utf-8")
+                self.assertIn('DOWNLOAD_BASE_DIR_OVERRIDE = "D:\\\\DOffice_Data"', source)
+                ast.parse(source)
+            finally:
+                settings_store.CONFIG_PATH = original_path
+
     def test_open_finish_menu_clicks_ellipsis_before_menuitem(self):
         class Locator:
             def __init__(self, visible=False, on_click=None):

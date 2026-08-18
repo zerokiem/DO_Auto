@@ -292,6 +292,27 @@
       syncTabRequirement();
     });
 
+    // URL truc tiep luon duoc uu tien trong backend. Khoa cach dieu huong cu
+    // ngay tren form de nguoi dung khong vo tinh sua ca hai cach roi tu hoi
+    // cach nao duoc chay. Xoa URL thi cac o Sidebar/Tieu muc mo lai.
+    document.querySelectorAll("input[name$='_list_link_href']").forEach((urlInput) => {
+      const prefix = urlInput.name === "new_list_link_href"
+        ? "new"
+        : urlInput.name.slice(0, -"_list_link_href".length);
+      const sidebar = document.querySelector(`input[name="${prefix}_sidebar_item"]`);
+      const listLink = document.querySelector(`input[name="${prefix}_list_link"]`);
+      const legacyBox = urlInput.closest(".field-row")?.querySelector(".legacy-navigation-fields");
+      const syncNavigationMode = () => {
+        const hasDirectUrl = Boolean(urlInput.value.trim());
+        [sidebar, listLink].filter(Boolean).forEach((input) => {
+          input.disabled = hasDirectUrl;
+        });
+        if (legacyBox && hasDirectUrl) legacyBox.open = false;
+      };
+      urlInput.addEventListener("input", syncNavigationMode);
+      syncNavigationMode();
+    });
+
     // Neu mo lai trang trong luc dang co 1 lan chay dien ra (vd nguoi dung
     // reload), tu ket noi lai console va tiep tuc theo doi thay vi mat log.
     const initial = window.__INITIAL_STATUS__;

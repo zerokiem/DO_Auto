@@ -8,7 +8,7 @@ Python + Playwright. Có 2 cách dùng: **CLI/PowerShell** (như trước) hoặ
 > Playwright/Chromium chạy ngay trên máy đó, không cần Docker). Nếu bạn muốn
 > chạy 24/7 trên NAS Synology qua Docker (không cần mở máy tính), xem
 > [`README_NAS.md`](README_NAS.md) – cùng 1 bộ code, chỉ khác cách triển khai
-> (biến môi trường `DOFFICE_DATA_DIR`/`DOFFICE_DISPLAY_DIR`/`DOFFICE_DISPLAY_URL`
+> (biến môi trường `DOFFICE_DATA_DIR`/`DOFFICE_DISPLAY_URL`
 > tự động chuyển hành vi, xem mục 10).
 
 | Trước đây (3 file rời) | Bây giờ |
@@ -482,8 +482,8 @@ trên - chọn lại 20/50/100/200/300/500 dòng hoặc "Tất cả" bằng drop
 tìm kiếm lọc theo bất kỳ cột nào, và nút **Tải file Excel** để tải nguyên file
 `.xlsx` về xem đầy đủ/chỉnh sửa. Bảng có khung cuộn riêng (không cuộn theo cả
 trang) với hàng tiêu đề dính ở trên. Cột "Tên file lưu" là **link bấm mở được
-trực tiếp** (dùng cấu hình "Đường dẫn hiển thị / Link mở file" ở mục 7.5 bên
-dưới). Độ rộng từng cột trên web **dùng đúng số liệu độ rộng cột đã đặt cho
+trực tiếp**: chạy Windows sẽ dùng đúng đường dẫn lưu; Docker/NAS sẽ dùng URL
+web/Tailscale đặt trong `.env`. Độ rộng từng cột trên web **dùng đúng số liệu độ rộng cột đã đặt cho
 file Excel** (`do_auto/excel_log.py`, biến `COLUMN_WIDTHS` – 1 nguồn duy nhất
 cho cả Excel lẫn web, không bị lệch); bảng có thể cuộn ngang nếu màn hình hẹp
 hơn tổng độ rộng các cột.
@@ -495,11 +495,10 @@ Chỉnh nhanh các mục hay đổi nhất **mà không cần mở code**:
 - Chung: dừng khi gặp trùng, khoá kiểm tra trùng, tốc độ thao tác trình duyệt.
 - Từng tác vụ: bật/tắt, **vai trò (role_pattern)**, số văn bản tối đa, có tải
   PDF không, có bấm Kết thúc không, có hỏi xác nhận trước khi Kết thúc không.
-- **Đường dẫn hiển thị / Link mở file**: điền đường dẫn ổ đĩa (vd `S:\...` nếu
-  chạy Docker/NAS và máy bạn map ổ đó) để cột "Thư mục lưu" trong Excel bấm mở
-  được trên Windows; và/hoặc 1 URL web (vd qua Tailscale) để hyperlink cột "Tên
-  file lưu" mở được cả trên điện thoại, không phụ thuộc ổ đĩa map. Để trống thì
-  dùng mặc định (đường dẫn thật / link `file://`).
+- **Nơi lưu file**: điền thư mục gốc nơi máy chạy DOffice lưu PDF,
+  Excel và log. Với Docker/NAS,
+  chỉ dùng đường dẫn bên trong container (thường `/data`); muốn đổi vị trí thật
+  trên NAS thì đổi `DOFFICE_DATA_HOST` trong `.env` và khởi động lại container.
 - **Phiên đăng nhập DOffice**: xem mục "Bước bắt buộc 1 lần" ở đầu file này -
   máy có màn hình thì bấm nút mở Chromium thật; máy không màn hình (NAS/Pi)
   thì điền form tài khoản/mật khẩu ngay tại đây.
@@ -644,6 +643,7 @@ Việt mới trong lần chạy đầu tiên, xem mục 1.)
 | Biến | Ý nghĩa |
 |---|---|
 | `DOWNLOAD_BASE_DIR` | Thư mục gốc chứa PDF; mỗi tác vụ có 1 thư mục con (`download_subdir`) |
+| `DOWNLOAD_BASE_DIR_OVERRIDE` | Thư mục lưu nhập trên trang Cài đặt; áp dụng cho PDF, Excel, lịch sử và log. Để trống sẽ dùng biến môi trường/mặc định. |
 | `EXCEL_FILE` | 1 file Excel duy nhất, mỗi tác vụ 1 sheet (`sheet_name`) |
 | `HISTORY_DB` | File SQLite lưu lịch sử chạy, dùng cho trang Lịch sử trên web |
 | `LOGS_DIR` | Thư mục chứa file log của TỪNG LẦN CHẠY (mọi nguồn: cli/scheduler/web) |
@@ -658,8 +658,7 @@ Việt mới trong lần chạy đầu tiên, xem mục 1.)
 | `PAUSE_BEFORE_CLOSE` | Dừng chờ Enter trước khi đóng browser (luôn `False` khi chạy qua web) |
 | `role_pattern` | Tên chức danh cần chọn trên DOffice cho từng tác vụ (mục 5.2) |
 | `DOWNLOAD_BASE_DIR` (env `DOFFICE_DATA_DIR`) | Chạy Windows: đường dẫn trong `config.py`. Chạy Docker/NAS: đọc từ biến môi trường `DOFFICE_DATA_DIR` (`docker-compose.yml`), thường là `/data` bên trong container – xem `README_NAS.md`. |
-| `DISPLAY_BASE_DIR` (env `DOFFICE_DISPLAY_DIR`, hoặc điền qua trang **Cài đặt**) | Đường dẫn **hiển thị** trong Excel/web (cột "Thư mục lưu") để bấm mở được trên Windows – chỉ cần khi `DOWNLOAD_BASE_DIR` là đường dẫn nội bộ container (vd `/data`) mà máy Windows không hiểu; ví dụ điền `S:\Working\Van_ban` nếu ổ NAS được map vào ổ S:. Chạy trực tiếp trên Windows thì để trống, không cần đổi. |
-| `DISPLAY_BASE_URL` (env `DOFFICE_DISPLAY_URL`, hoặc điền qua trang **Cài đặt**) | Nếu điền (dạng `http://...`), hyperlink cột "Tên file lưu" sẽ trỏ tới NAS qua web (vd qua Tailscale) thay vì link `file://` trên ổ đĩa – mở được cả trên điện thoại. Để trống thì dùng lại link `file://`. |
+| `DISPLAY_BASE_URL` (env `DOFFICE_DISPLAY_URL`) | Chỉ dùng khi chạy Docker/NAS: URL public kết thúc bằng `/vb` để hyperlink PDF mở qua web/Tailscale. Chạy Windows không cần đặt, link `file://` sẽ trỏ thẳng tới đúng nơi lưu. |
 
 Gợi ý cấu hình theo chế độ (giống bản cũ):
 

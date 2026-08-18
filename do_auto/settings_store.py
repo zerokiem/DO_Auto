@@ -62,6 +62,7 @@ TASK_FIELD_RENDER = {
 # Cac bien chung duoc phep sua tu web: {ten_bien_trong_config.py: ham_render}.
 COMMON_FIELD_RENDER = {
     "DOFFICE_URL": lambda v: json.dumps(str(v), ensure_ascii=False),
+    "DOWNLOAD_BASE_DIR_OVERRIDE": lambda v: json.dumps(str(v).strip(), ensure_ascii=False),
     "STOP_WHEN_DUPLICATE_FOUND": lambda v: "True" if v else "False",
     "DUPLICATE_CHECK_MODE": lambda v: json.dumps(str(v), ensure_ascii=False),
     "SLOW_MO_MS": lambda v: str(int(v)),
@@ -69,8 +70,6 @@ COMMON_FIELD_RENDER = {
     "TELEGRAM_BOT_TOKEN": lambda v: json.dumps(str(v), ensure_ascii=False),
     "TELEGRAM_CHAT_ID": lambda v: json.dumps(str(v), ensure_ascii=False),
     "TELEGRAM_NOTIFY_ONLY_IF_NEW": lambda v: "True" if v else "False",
-    "DISPLAY_BASE_DIR_OVERRIDE": lambda v: json.dumps(str(v).strip(), ensure_ascii=False),
-    "DISPLAY_BASE_URL_OVERRIDE": lambda v: json.dumps(str(v).strip(), ensure_ascii=False),
 }
 
 # Gia tri mac dinh dung khi config.py cua nguoi dung CHUA CO bien nay (ban cu
@@ -79,6 +78,7 @@ COMMON_FIELD_RENDER = {
 # tu dien qua trang Cai dat).
 _DEFAULTS: Dict[str, Any] = {
     "DOFFICE_URL": "https://doffice.npt.com.vn/",
+    "DOWNLOAD_BASE_DIR_OVERRIDE": "",
     "ROLE_BUTTON_NAME_HINT": "",
     "REFRESH_LIST_EVERY": 0,
     "DOWNLOAD_ATTEMPT_TIMEOUTS_MS": [7000, 15000, 20000],
@@ -90,10 +90,7 @@ _DEFAULTS: Dict[str, Any] = {
     "TELEGRAM_BOT_TOKEN": "",
     "TELEGRAM_CHAT_ID": "",
     "TELEGRAM_NOTIFY_ONLY_IF_NEW": False,
-    "DISPLAY_BASE_DIR": None,
     "DISPLAY_BASE_URL": "",
-    "DISPLAY_BASE_DIR_OVERRIDE": "",
-    "DISPLAY_BASE_URL_OVERRIDE": "",
 }
 
 _VALUE_PATTERN = r'(?:True|False|"(?:[^"\\]|\\.)*"|-?\d+)'
@@ -399,23 +396,34 @@ def build_effective_config(base_cfg) -> SimpleNamespace:
     Moi truong "tuy chon" (co the chua co trong config.py cu) deu doc qua
     _get() de khong bao gio lam sap trang web vi AttributeError - xem docstring
     dau file."""
-    download_base_dir = base_cfg.DOWNLOAD_BASE_DIR
+    configured_download_base_dir = Path(base_cfg.DOWNLOAD_BASE_DIR)
+    download_base_override = str(_get(base_cfg, "DOWNLOAD_BASE_DIR_OVERRIDE") or "").strip()
+    # Config cu (truoc khi co bien override) van hoat dong: neu nguoi dung luu
+    # o moi tren web, dat tat ca file phu tro cung nam duoi thu muc moi.
+    download_base_dir = Path(download_base_override) if download_base_override else configured_download_base_dir
+
+    def rebase_if_under_download_dir(value, fallback):
+        path = Path(getattr(base_cfg, value, fallback))
+        try:
+            return download_base_dir / path.relative_to(configured_download_base_dir)
+        except ValueError:
+            # Gia tri da duoc nguoi dung dat thanh mot duong dan doc lap thi
+            # ton trong no, khong tu y dich chuyen.
+            return path
 
     return SimpleNamespace(
         DOFFICE_URL=_get(base_cfg, "DOFFICE_URL"),
         AUTH_STATE=base_cfg.AUTH_STATE,
         DOWNLOAD_BASE_DIR=download_base_dir,
-        # Duong dan hien thi de bam mo file tren Windows (o S:). Config cu chua co
-        # bien nay -> fallback ve chinh download_base_dir (giu nguyen hanh vi cu).
-        DISPLAY_BASE_DIR=getattr(base_cfg, "DISPLAY_BASE_DIR", None) or str(download_base_dir),
+        DOWNLOAD_BASE_DIR_OVERRIDE=download_base_override,
+        # Thu muc ghi trong Excel luon la thu muc luu that su, khong co lop map
+        # sang o dia hien thi khac de tranh hai duong dan bi lech nhau.
+        DISPLAY_BASE_DIR=str(download_base_dir),
         # URL web toi NAS de bam mo file tren dien thoai/Tailscale. "" -> giu link file://.
         DISPLAY_BASE_URL=getattr(base_cfg, "DISPLAY_BASE_URL", "") or "",
-        # Gia tri nguoi dung tu dien qua trang Cai dat (rong = dang dung mac dinh/env).
-        DISPLAY_BASE_DIR_OVERRIDE=_get(base_cfg, "DISPLAY_BASE_DIR_OVERRIDE"),
-        DISPLAY_BASE_URL_OVERRIDE=_get(base_cfg, "DISPLAY_BASE_URL_OVERRIDE"),
-        EXCEL_FILE=base_cfg.EXCEL_FILE,
-        HISTORY_DB=getattr(base_cfg, "HISTORY_DB", download_base_dir / "doffice_auto_history.sqlite3"),
-        LOGS_DIR=getattr(base_cfg, "LOGS_DIR", download_base_dir / "logs"),
+        EXCEL_FILE=rebase_if_under_download_dir("EXCEL_FILE", configured_download_base_dir / "Tong_hop_DOffice.xlsx"),
+        HISTORY_DB=rebase_if_under_download_dir("HISTORY_DB", configured_download_base_dir / "doffice_auto_history.jsonl"),
+        LOGS_DIR=rebase_if_under_download_dir("LOGS_DIR", configured_download_base_dir / "logs"),
         DUPLICATE_CHECK_MODE=_get(base_cfg, "DUPLICATE_CHECK_MODE"),
         STOP_WHEN_DUPLICATE_FOUND=_get(base_cfg, "STOP_WHEN_DUPLICATE_FOUND"),
         REFRESH_LIST_EVERY=_get(base_cfg, "REFRESH_LIST_EVERY"),

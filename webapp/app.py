@@ -15,6 +15,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urljoin
 
 from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_file, url_for
 
@@ -471,18 +472,15 @@ def settings_page():
 
         doffice_url = request.form.get("doffice_url", "").strip()
         common_updates = {
+            "DOWNLOAD_BASE_DIR_OVERRIDE": request.form.get(
+                "download_base_dir_override", effective_cfg.DOWNLOAD_BASE_DIR_OVERRIDE
+            ).strip(),
             "STOP_WHEN_DUPLICATE_FOUND": request.form.get("stop_when_duplicate_found") == "on",
             "DUPLICATE_CHECK_MODE": request.form.get("duplicate_check_mode", effective_cfg.DUPLICATE_CHECK_MODE),
             "ENABLE_TELEGRAM_NOTIFY": request.form.get("enable_telegram_notify") == "on",
             "TELEGRAM_BOT_TOKEN": request.form.get("telegram_bot_token", effective_cfg.TELEGRAM_BOT_TOKEN).strip(),
             "TELEGRAM_CHAT_ID": request.form.get("telegram_chat_id", effective_cfg.TELEGRAM_CHAT_ID).strip(),
             "TELEGRAM_NOTIFY_ONLY_IF_NEW": request.form.get("telegram_notify_only_if_new") == "on",
-            "DISPLAY_BASE_DIR_OVERRIDE": request.form.get(
-                "display_base_dir_override", effective_cfg.DISPLAY_BASE_DIR_OVERRIDE
-            ).strip(),
-            "DISPLAY_BASE_URL_OVERRIDE": request.form.get(
-                "display_base_url_override", effective_cfg.DISPLAY_BASE_URL_OVERRIDE
-            ).strip(),
         }
         if doffice_url:
             common_updates["DOFFICE_URL"] = doffice_url
@@ -560,6 +558,8 @@ def settings_page():
     tasks = _ordered_tasks(effective_cfg)
     common = {
         "DOFFICE_URL": effective_cfg.DOFFICE_URL,
+        "DOWNLOAD_BASE_DIR": str(effective_cfg.DOWNLOAD_BASE_DIR),
+        "DOWNLOAD_BASE_DIR_OVERRIDE": effective_cfg.DOWNLOAD_BASE_DIR_OVERRIDE,
         "STOP_WHEN_DUPLICATE_FOUND": effective_cfg.STOP_WHEN_DUPLICATE_FOUND,
         "DUPLICATE_CHECK_MODE": effective_cfg.DUPLICATE_CHECK_MODE,
         "SLOW_MO_MS": effective_cfg.SLOW_MO_MS,
@@ -567,10 +567,6 @@ def settings_page():
         "TELEGRAM_BOT_TOKEN": effective_cfg.TELEGRAM_BOT_TOKEN,
         "TELEGRAM_CHAT_ID": effective_cfg.TELEGRAM_CHAT_ID,
         "TELEGRAM_NOTIFY_ONLY_IF_NEW": effective_cfg.TELEGRAM_NOTIFY_ONLY_IF_NEW,
-        "DISPLAY_BASE_DIR": effective_cfg.DISPLAY_BASE_DIR,
-        "DISPLAY_BASE_URL": effective_cfg.DISPLAY_BASE_URL,
-        "DISPLAY_BASE_DIR_OVERRIDE": effective_cfg.DISPLAY_BASE_DIR_OVERRIDE,
-        "DISPLAY_BASE_URL_OVERRIDE": effective_cfg.DISPLAY_BASE_URL_OVERRIDE,
     }
     saved = request.args.get("saved") == "1"
     message = request.args.get("message", "")
@@ -584,7 +580,11 @@ def settings_page():
         error=error,
         auth=_auth_state_info(effective_cfg),
         login_status=login_manager.status(),
-        route_choices=DOFFICE_ROUTE_CHOICES,
+        # Dua URL day du vao datalist de nguoi dung copy/paste duoc ngay. Code
+        # van chap nhan ca URL day du lan path /... de tuong thich config cu.
+        route_choices=[
+            (label, urljoin(effective_cfg.DOFFICE_URL, route)) for label, route in DOFFICE_ROUTE_CHOICES
+        ],
         # Nut "Dang nhap lai" can mo Chromium THAT tren may dang chay server
         # nay - tren Linux/Docker (NAS/Pi) khong co man hinh (DISPLAY) se luon
         # loi, xem do_auto/login_flow.py. Bao truoc thay vi de bam xong moi biet.
