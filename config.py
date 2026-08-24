@@ -15,6 +15,7 @@ from do_auto.task_types import TaskConfig
 
 APP_VERSION = "1.1.3"
 BROWSER_VIEWPORT = {"width": 1280, "height": 720}
+PROJECT_DIR = Path(__file__).resolve().parent
 
 # ----------------------------------------------------------------------------------
 # 1) CAU HINH CHUNG - ap dung cho moi tac vu
@@ -24,7 +25,11 @@ BROWSER_VIEWPORT = {"width": 1280, "height": 720}
 DOFFICE_URL = "https://doffice.npt.com.vn/"
 
 # Phien dang nhap Playwright da luu sau khi chay login_save_state.py.
-AUTH_STATE = Path("playwright/.auth/state.json")
+# Neo vao thu muc project de web dashboard, CLI va Task Scheduler luon dung
+# chung mot file, bat ke thu muc hien tai cua tien trinh.
+_AUTH_STATE_VALUE = os.environ.get("DOFFICE_AUTH_STATE", "playwright/.auth/state.json")
+_AUTH_STATE_PATH = Path(_AUTH_STATE_VALUE).expanduser()
+AUTH_STATE = _AUTH_STATE_PATH if _AUTH_STATE_PATH.is_absolute() else PROJECT_DIR / _AUTH_STATE_PATH
 
 # Thu muc goc chua PDF tai ve. Moi tac vu se tu tao 1 thu muc con ben trong
 # (xem download_subdir trong tung TaskConfig ben duoi), vi du:

@@ -19,6 +19,10 @@
 .env
 /data/
 
+# --- Các file nén code cũ
+*.tar.gz
+code_zip/
+
 # --- VSCode ---
 .vscode/*.log
 
