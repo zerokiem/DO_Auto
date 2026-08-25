@@ -1,56 +1,76 @@
 @echo off
+setlocal EnableExtensions
+
 rem --------------------------------------------------------------
-rem  Install Windows Scheduled Task to automatically run the DOffice web dashboard (run_web.py)
-rem  when the user logs on to Windows 10. This batch file provides the same
-rem  functionality as install_web_startup.ps1 but works in a plain CMD
-rem  environment (no PowerShell required).
+rem Install Windows Scheduled Task to automatically run
+rem the DOffice web dashboard when user logs on.
 rem --------------------------------------------------------------
 
-rem Get the directory of this script (equivalent to $PSScriptRoot)
+rem Get project directory
 set "PROJECT_DIR=%~dp0"
+
+rem Remove trailing backslash
+if "%PROJECT_DIR:~-1%"=="\" set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 
 rem Define task name and paths
 set "TaskName=DOffice Web Dashboard"
-set "PythonwExe=%PROJECT_DIR%.venv\Scripts\pythonw.exe"
-set "Script=%PROJECT_DIR%run_web.py"
+set "PythonwExe=%PROJECT_DIR%\.venv\Scripts\pythonw.exe"
+set "Script=%PROJECT_DIR%\run_web.py"
 
-rem Check that pythonw.exe exists
+rem Check pythonw.exe
 if not exist "%PythonwExe%" (
-    echo Khong thay pythonw.exe: %PythonwExe%
-    echo Kiem tra lai da tao virtual environment (.venv) chua (xem README muc 3).
+    echo.
+    echo Khong thay pythonw.exe:
+    echo %PythonwExe%
+    echo.
+    echo Kiem tra lai da tao virtual environment .venv chua.
+    pause
     exit /b 1
 )
 
-rem Check that run_web.py exists
+rem Check run_web.py
 if not exist "%Script%" (
-    echo Khong thay file: %Script%
+    echo.
+    echo Khong thay file:
+    echo %Script%
+    pause
     exit /b 1
 )
 
-rem Remove any existing scheduled task with the same name (ignore errors)
+echo.
+echo Dang xoa Scheduled Task cu neu co...
+
 schtasks /Delete /TN "%TaskName%" /F >nul 2>&1
 
-rem Build the command line for the scheduled task. Use double quoting for paths.
-set "TaskAction=\"%PythonwExe%\" \"%Script%\""
+echo Dang cai Scheduled Task...
 
-rem Create the scheduled task to run at user logon. It runs under the current user.
+rem Create task at user logon
 schtasks /Create ^
-    /TN "%TaskName%" ^
-    /TR "%TaskAction%" ^
-    /SC ONLOGON ^
-    /RL HIGHEST ^
-    /F ^
-    /RU "%USERNAME%"
+ /TN "%TaskName%" ^
+ /TR "\"%PythonwExe%\" \"%Script%\"" ^
+ /SC ONLOGON ^
+ /RL LIMITED ^
+ /F
 
-echo Da cai: "%TaskName%" se tu chay khi dang nhap Windows.
-echo.
-echo Chay ngay bay gio (khong doi den lan dang nhap sau):
-echo   schtasks /Run /TN "%TaskName%"
-echo.
-echo Dung web dashboard dang chay (khong co nut Stop rieng vi chay ngam khong console):
-echo   taskkill /IM pythonw.exe /F
-echo.
-echo Go bo tu dong chay khi dang nhap:
-echo   schtasks /Delete /TN "%TaskName%" /F
+if errorlevel 1 (
+    echo.
+    echo LOI: Khong tao duoc Scheduled Task.
+    echo Neu task cu thuoc tai khoan Administrator, hay xoa no bang CMD Run as administrator.
+    echo.
+    pause
+    exit /b 1
+)
 
-exit /b 0
+echo.
+echo ==================================================
+echo Da cai thanh cong: %TaskName%
+echo Dashboard se tu dong chay khi dang nhap Windows.
+echo ==================================================
+echo.
+
+echo De chay ngay bay gio, dung lenh:
+echo schtasks /Run /TN "%TaskName%"
+echo.
+
+pause
+endlocal

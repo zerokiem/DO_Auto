@@ -62,7 +62,11 @@ class _TeeStream(io.TextIOBase):
         self._buf = ""
 
     def write(self, s: str) -> int:
-        self._original.write(s)
+        # pythonw.exe tren Windows khong gan console nen sys.stdout co the la
+        # None. Web van phai phat log qua broadcaster thay vi loi ngay lan
+        # print() dau tien.
+        if self._original is not None:
+            self._original.write(s)
         self._buf += s
         while "\n" in self._buf:
             line, self._buf = self._buf.split("\n", 1)
@@ -71,7 +75,8 @@ class _TeeStream(io.TextIOBase):
         return len(s)
 
     def flush(self) -> None:
-        self._original.flush()
+        if self._original is not None:
+            self._original.flush()
 
 
 class RunManager:

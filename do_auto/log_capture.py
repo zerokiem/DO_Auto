@@ -16,11 +16,15 @@ class FileTeeStream(io.TextIOBase):
         self._file = file_handle
 
     def write(self, s: str) -> int:
-        self._original.write(s)
+        # Khi chay bang pythonw.exe, Windows khong tao console va sys.stdout
+        # bang None. File log van la dich ghi hop le va phai tiep tuc hoat dong.
+        if self._original is not None:
+            self._original.write(s)
         self._file.write(s)
         self._file.flush()
         return len(s)
 
     def flush(self) -> None:
-        self._original.flush()
+        if self._original is not None:
+            self._original.flush()
         self._file.flush()

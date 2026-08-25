@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.1.4 - 2026-08-25
+
+### Added
+
+- Bo sung bo script CMD cho Windows 10: cai moi truong, dang nhap, chay web,
+  cai/go Scheduled Task va kiem tra cong 8877.
+- Them huong dan cai lai sach trong `README_WINDOWS_CMD.md`.
+
+### Fixed
+
+- Sua ghi log khi web chay bang `pythonw.exe` khong co `sys.stdout`, tranh loi
+  `'NoneType' object has no attribute 'write'`.
+- Neo duong dan `AUTH_STATE` theo thu muc project de CMD, Scheduled Task va
+  PowerShell dung chung mot phien dang nhap.
+
 ## v1.1.0 - 2026-08-16
 
 ### Added
